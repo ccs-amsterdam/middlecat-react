@@ -1,20 +1,24 @@
-export interface AmcatUser {
-  /** hostname (e.g. "https://vu.amcat.nl/api") */
-  host: string;
+import { Axios } from "axios";
+
+export interface MiddlecatUser {
   /** user signin email */
   email: string;
   /** user name */
   name: string;
   /** image */
   image: string;
-  /** amcat resource access_token */
-  token: string;
-  /** function to refresh the token */
-  refresh: () => Promise<AmcatUser | undefined>;
+  /** Axios instance to make API calls */
+  api: Axios;
   /** Kill a middlecat session. Used internally on signout */
   killSession: () => Promise<void>;
-  /** Access token expiration time */
+}
+
+export interface AccessTokenPayload {
+  clientId: string;
+  resource: string;
+  email: string;
+  name: string;
+  image: string;
   exp: number;
-  /** Middlecat host */
   middlecat: string;
 }
