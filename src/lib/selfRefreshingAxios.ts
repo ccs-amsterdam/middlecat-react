@@ -20,7 +20,7 @@ export default function selfRefreshingAxios(
   refresh_token: string,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ) {
-  const api = axios.create({ baseURL: resource });
+  const api = axios.create();
 
   // use in intercepter as closure
   let currentAccessToken = access_token;
@@ -39,7 +39,14 @@ export default function selfRefreshingAxios(
         throw new Error("Could not refresh token");
       }
 
-      config.headers = { Authorization: `Bearer ${currentAccessToken}` };
+      // ensure that resource is the base url, so that its not easy to
+      // to send a request with the tokens somewhere else
+      config.baseURL = resource;
+
+      config.headers = {
+        Authorization: `Bearer ${currentAccessToken}`,
+      };
+
       return config;
     },
     function (error) {
