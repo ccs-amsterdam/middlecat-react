@@ -3,6 +3,7 @@ import { safeURL, silentDeleteSearchParams } from "./util";
 import { authorizationCode, authorize } from "./middlecatOauth";
 import { MiddlecatUser } from "./types";
 import { createMiddlecatUser } from "./createMiddlecatUser";
+import authFormGenerator from "./authFormGenerator";
 
 // This hook is to be used in React applications using middlecat
 
@@ -21,49 +22,35 @@ import { createMiddlecatUser } from "./createMiddlecatUser";
  * added to the axios call. Also, we use short-lived access tokens with
  * rotating refresh tokens and automatic
  *
- * @param resource The URL of a resource (e.g., https://amcat.vu.nl)
+ * @param fixedResource Optinally, use a fixed resource (e.g., https://amcat.vu.nl)
  * @returns
  */
-export default function useMiddlecat(resource: string) {
-  resource = safeURL(resource);
+export default function useMiddlecat(
+  fixedResource?: string,
+  autoReconnect: boolean = true
+) {
   const [user, setUser] = useState<MiddlecatUser>();
-  const [loading, setLoading] = useState(false);
+  const runOnce = useRef(true);
+  const [loading, setLoading] = useState(true);
 
-  const searchParams = new URLSearchParams(window.location.search);
-  const code = searchParams.get("code");
-  const state = searchParams.get("state");
-  const tryAuthCode = useRef(true);
-
-  const signIn = useCallback(() => {
-    // Step 1. Redirects to middlecat, which will redirect back with code and state
-    // parameters. This triggers the authorizationCode flow.
-    if (!user) authorize(resource);
-  }, [user, resource]);
-
-  useEffect(() => {
-    if (!tryAuthCode.current) return;
-    if (!code || !state) return;
-    tryAuthCode.current = false; // only try once
-    // Step 2. if code and state in url parameters, we (should be) in the middle of the
-    // oauth flow. Now we can use the authorization code to get the tokens. On success
-    // this creates the MiddlecatUser.
-
-    setLoading(true);
-    silentDeleteSearchParams(["code", "state"]);
-
-    authorizationCode(code, state, resource)
-      .then(({ access_token, refresh_token }) => {
-        const user = createMiddlecatUser(access_token, refresh_token, setUser);
-        if (user) setUser(user);
-      })
-      .catch((e) => {
-        console.error(e);
-        setUser(undefined);
-      })
-      .finally(() => setLoading(false));
-  }, [loading, setUser, resource, code, state]);
+  const signIn = useCallback(
+    (resource?: string) => {
+      // action 1. Redirects to middlecat, which will redirect back with code and state
+      // parameters. This triggers the authorizationCode flow.
+      let r = safeURL(fixedResource || resource || "");
+      authorize(r)
+        .then((middlecat_redirect) => {
+          localStorage.setItem("resource", r);
+          window.location.href = middlecat_redirect;
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    },
+    [fixedResource]
+  );
 
   const signOut = useCallback(() => {
+    localStorage.setItem("resource", "");
     if (!user) return;
     user
       .killSession()
@@ -71,5 +58,56 @@ export default function useMiddlecat(resource: string) {
       .catch((e: Error) => console.error(e));
   }, [user]);
 
-  return { user, loading, signIn, signOut };
+  useEffect(() => {
+    // This runs once on mount, and can do two things
+    // - if there is a 'resource' in localStorage, and there is a code and state url parameter,
+    //   then middlecat just redirected here and we should complete the oauth dance
+    // - if this is not the case, but we do have a resource and autoReconnect is set to true,
+    //   immediately initiate another oauth dance
+    if (!runOnce.current) return;
+    runOnce.current = false;
+
+    const resource = localStorage.getItem("resource");
+    if (!resource) {
+      setLoading(false);
+      return;
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+    silentDeleteSearchParams(["code", "state"]);
+
+    if (!code || !state) {
+      if (!autoReconnect) {
+        setLoading(false);
+      } else {
+        signIn(resource);
+      }
+      return;
+    }
+
+    authorizationCode(resource, code, state)
+      .then(({ access_token, refresh_token }) => {
+        const user = createMiddlecatUser(access_token, refresh_token, setUser);
+        localStorage.setItem("resource", resource);
+        setUser(user);
+      })
+      .catch((e) => {
+        console.error(e);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [autoReconnect, signIn]);
+
+  const AuthForm = authFormGenerator({
+    fixedResource: fixedResource || "",
+    user,
+    loading,
+    signIn,
+    signOut,
+  });
+
+  return { user, AuthForm, loading, signIn, signOut };
 }

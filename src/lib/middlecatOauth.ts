@@ -2,26 +2,29 @@ import pkceChallenge from "pkce-challenge";
 
 import { safeURL } from "./util";
 
-export function authorize(resource: string) {
+export async function authorize(resource: string) {
   const redirect_uri = window.location.href;
   const pkce = pkceChallenge();
   const state = (Math.random() + 1).toString(36).substring(2);
 
-  // should actually get this from resource endpoint
-  const middlecat = safeURL("http://localhost:3000");
+  const res = await fetch(`${safeURL(resource)}/middlecat`);
+  let { middlecat_url } = await res.json();
+  middlecat_url = safeURL(middlecat_url);
+  if (res.status !== 200 || !middlecat_url)
+    throw new Error("Could not get MiddleCat URL from resource");
 
   // need to remember code_verifier and state, and this needs to work across
   // sessions because auth with magic links continues in new window.
   localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
   localStorage.setItem(resource + "_state", state);
-  localStorage.setItem(resource + "_middlecat", middlecat);
-  window.location.href = `${middlecat}/authorize?state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
+  localStorage.setItem(resource + "_middlecat", middlecat_url);
+  return `${middlecat_url}/authorize?state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
 }
 
 export async function authorizationCode(
+  resource: string,
   code: string,
-  state: string,
-  resource: string
+  state: string
 ) {
   const sendState = localStorage.getItem(resource + "_state");
   const middlecat = localStorage.getItem(resource + "_middlecat");
