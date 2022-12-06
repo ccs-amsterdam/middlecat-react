@@ -43,8 +43,10 @@ export default function useMiddlecat(
           localStorage.setItem("resource", r);
           window.location.href = middlecat_redirect;
         })
-        .catch(console.error)
-        .finally(() => setLoading(false));
+        .catch((e) => {
+          console.error(e);
+          setLoading(false);
+        });
     },
     [fixedResource]
   );
