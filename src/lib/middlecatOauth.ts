@@ -25,14 +25,17 @@ export async function authorizationCode(
 ) {
   const sendState = localStorage.getItem(resource + "_state");
   const middlecat = localStorage.getItem(resource + "_middlecat");
-  if (!middlecat || sendState !== state) return;
-  // checking the state serves a both security and for distinguishes multiple flows
-  // (if multiple useMiddlecat hooks are used simultaneously)
+  let code_verifier = localStorage.getItem(resource + "_code_verifier");
 
+  if (!middlecat || sendState !== state) {
+    // if state doesn't match, something fishy is going on. We won't send the actual code_verifier, but instead
+    // send an obvious wrong code_verifier, which will cause middlecat to kill the session
+    code_verifier = "DoYouReallyWantToHurtMe?";
+  }
   const body = {
     grant_type: "authorization_code",
     code,
-    code_verifier: localStorage.getItem(resource + "_code_verifier"),
+    code_verifier,
   };
 
   const res = await fetch(`${middlecat}/api/token`, {
