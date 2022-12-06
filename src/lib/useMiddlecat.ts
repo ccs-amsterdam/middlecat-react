@@ -52,10 +52,12 @@ export default function useMiddlecat(
   const signOut = useCallback(() => {
     localStorage.setItem("resource", "");
     if (!user) return;
+    // currently doesn't tell the user if could not kill
+    // session because middlecat can't be reached. Should we?
     user
       .killSession()
-      .then(() => setUser(undefined))
-      .catch((e: Error) => console.error(e));
+      .catch((e: Error) => console.error(e))
+      .finally(() => setUser(undefined));
   }, [user]);
 
   useEffect(() => {
