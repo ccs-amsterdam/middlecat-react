@@ -69,6 +69,7 @@ export default function useMiddlecat({
   );
 
   const signOut = useCallback(() => {
+    setLoading(true);
     localStorage.setItem("resource", "");
     if (!user) return;
     // currently doesn't tell the user if could not kill
@@ -76,7 +77,10 @@ export default function useMiddlecat({
     user
       .killSession()
       .catch((e: Error) => console.error(e))
-      .finally(() => setUser(undefined));
+      .finally(() => {
+        setLoading(false);
+        setUser(undefined);
+      });
   }, [user]);
 
   useEffect(() => {
