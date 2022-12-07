@@ -69,7 +69,7 @@ async function getTokens(access_token: string, refresh_token: string) {
   const payload: AccessTokenPayload = jwtDecode(access_token);
 
   const now = Date.now() / 1000;
-  const nearfuture = now + 30; // refresh x seconds before expires
+  const nearfuture = now + 10; // refresh x seconds before expires
   if (payload.exp < nearfuture) {
     return await refreshToken(payload.middlecat, refresh_token);
   } else {
