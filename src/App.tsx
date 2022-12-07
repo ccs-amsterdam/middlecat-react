@@ -26,7 +26,7 @@ function App() {
           <p>{msg}</p>
           <p style={{ fontSize: "1.2rem" }}>
             {msg &&
-              "Except it doesn't, because token is automatically refreshed about 30 seconds before it expires"}
+              "Except it doesn't, because token is automatically refreshed about 10 seconds before it expires"}
           </p>
         </div>
       </div>
