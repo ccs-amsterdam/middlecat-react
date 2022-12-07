@@ -1,9 +1,17 @@
-import { useCallback, useEffect, useState, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import { safeURL, silentDeleteSearchParams } from "./util";
 import { authorizationCode, authorize } from "./middlecatOauth";
 import { MiddlecatUser } from "./types";
 import { createMiddlecatUser } from "./createMiddlecatUser";
 import authFormGenerator from "./authFormGenerator";
+import { refreshToken } from "./selfRefreshingAxios";
 
 // This hook is to be used in React applications using middlecat
 
@@ -25,10 +33,18 @@ import authFormGenerator from "./authFormGenerator";
  * @param fixedResource Optinally, use a fixed resource (e.g., https://amcat.vu.nl)
  * @returns
  */
-export default function useMiddlecat(
-  fixedResource?: string,
-  autoReconnect: boolean = true
-) {
+
+interface useMiddlecatParams {
+  fixedResource?: string;
+  autoReconnect?: boolean;
+  storeToken?: boolean;
+}
+
+export default function useMiddlecat({
+  fixedResource,
+  autoReconnect = true,
+  storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+}: useMiddlecatParams = {}) {
   const [user, setUser] = useState<MiddlecatUser>();
   const runOnce = useRef(true);
   const [loading, setLoading] = useState(true);
@@ -82,28 +98,28 @@ export default function useMiddlecat(
     const state = searchParams.get("state");
     silentDeleteSearchParams(["code", "state"]);
 
-    if (!code || !state) {
-      if (!autoReconnect) {
-        setLoading(false);
-      } else {
-        signIn(resource);
-      }
+    // If code and state parameters are given, complete the oauth flow
+    if (code && state) {
+      connectWithAuthGrant(
+        resource,
+        code,
+        state,
+        storeToken,
+        setUser,
+        setLoading
+      );
       return;
     }
 
-    authorizationCode(resource, code, state)
-      .then(({ access_token, refresh_token }) => {
-        const user = createMiddlecatUser(access_token, refresh_token, setUser);
-        localStorage.setItem("resource", resource);
-        setUser(user);
-      })
-      .catch((e) => {
-        console.error(e);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [autoReconnect, signIn]);
+    // If autoReconnect and storeToken are used, reconnect with the stored refresh token
+    if (autoReconnect && storeToken) {
+      connectWithRefresh(resource, storeToken, setUser, setLoading);
+      return;
+    }
+
+    // If autoReconnect is used without storeToken, redirect to middlecat
+    if (autoReconnect) signIn(resource);
+  }, [autoReconnect, storeToken, signIn]);
 
   const AuthForm = authFormGenerator({
     fixedResource: fixedResource || "",
@@ -114,4 +130,59 @@ export default function useMiddlecat(
   });
 
   return { user, AuthForm, loading, signIn, signOut };
+}
+
+function connectWithAuthGrant(
+  resource: string,
+  code: string,
+  state: string,
+  storeToken: boolean,
+  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
+  setLoading: Dispatch<SetStateAction<boolean>>
+) {
+  authorizationCode(resource, code, state)
+    .then(({ access_token, refresh_token }) => {
+      const user = createMiddlecatUser(
+        access_token,
+        refresh_token,
+        storeToken,
+        setUser
+      );
+      localStorage.setItem("resource", resource);
+      setUser(user);
+    })
+    .catch((e) => {
+      console.error(e);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+}
+
+function connectWithRefresh(
+  resource: string,
+
+  storeToken: boolean,
+  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
+  setLoading: Dispatch<SetStateAction<boolean>>
+) {
+  const middlecat = localStorage.getItem(resource + "_middlecat") || "";
+  const refresh_token = localStorage.getItem(resource + "_refresh") || "";
+  refreshToken(middlecat, refresh_token)
+    .then(({ access_token, refresh_token }) => {
+      const user = createMiddlecatUser(
+        access_token,
+        refresh_token,
+        storeToken,
+        setUser
+      );
+      localStorage.setItem("resource", resource);
+      setUser(user);
+    })
+    .catch((e) => {
+      console.error(e);
+    })
+    .finally(() => {
+      setLoading(false);
+    });
 }

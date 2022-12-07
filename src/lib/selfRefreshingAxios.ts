@@ -18,6 +18,7 @@ export default function selfRefreshingAxios(
   resource: string,
   access_token: string,
   refresh_token: string,
+  storeToken: boolean,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ) {
   const api = axios.create();
@@ -25,6 +26,8 @@ export default function selfRefreshingAxios(
   // use in intercepter as closure
   let currentAccessToken = access_token;
   let currentRefreshToken = refresh_token;
+  if (storeToken)
+    localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
 
   api.interceptors.request.use(
     async (config) => {
@@ -34,6 +37,8 @@ export default function selfRefreshingAxios(
       );
       currentAccessToken = access_token;
       currentRefreshToken = refresh_token;
+      if (storeToken)
+        localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
       if (!currentAccessToken) {
         setUser(undefined);
         throw new Error("Could not refresh token");
@@ -72,7 +77,7 @@ async function getTokens(access_token: string, refresh_token: string) {
   }
 }
 
-async function refreshToken(middlecat: string, refresh_token: string) {
+export async function refreshToken(middlecat: string, refresh_token: string) {
   const body = {
     grant_type: "refresh_token",
     refresh_token,
