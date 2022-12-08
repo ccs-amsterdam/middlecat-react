@@ -10,7 +10,7 @@ export interface MiddlecatUser {
   /** Axios instance to make API calls */
   api: Axios;
   /** Kill a middlecat session. Used internally on signout */
-  killSession: () => Promise<void>;
+  killSession: (signOutMiddlecat: boolean) => Promise<void>;
 }
 
 export interface AccessTokenPayload {

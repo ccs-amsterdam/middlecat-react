@@ -51,6 +51,11 @@ const AuthContainer = styled.div<LayoutProps>`
     padding: 10px 10px 10px 10px;
     font-size: inherit;
   }
+  .SignOut {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
 
   & .Loader {
     margin: auto;
@@ -194,7 +199,7 @@ function SignInForm({
 
 interface SignOutFormProps {
   user: MiddlecatUser;
-  signOut: () => void;
+  signOut: (signOutMiddlecat: boolean) => void;
   signOutLabel?: string;
 }
 
@@ -210,7 +215,12 @@ function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
         </div>
       </div>
       <br />
-      <button onClick={() => signOut()}>{signOutLabel || "Sign-out"}</button>
+      <div className="SignOut">
+        <button onClick={() => signOut(false)}>
+          {signOutLabel || "Sign-out"}
+        </button>
+        <button onClick={() => signOut(true)}>{"Sign-out MiddleCat"}</button>
+      </div>
     </>
   );
 }

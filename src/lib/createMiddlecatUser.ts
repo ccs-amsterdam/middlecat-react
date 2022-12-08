@@ -27,8 +27,13 @@ export function createMiddlecatUser(
     storeToken,
     setUser
   );
-  const killSession = async () =>
-    killMiddlecatSession(payload.middlecat, refresh_token, setUser);
+  const killSession = async (signOutMiddlecat: boolean) =>
+    killMiddlecatSession(
+      payload.middlecat,
+      refresh_token,
+      signOutMiddlecat,
+      setUser
+    );
 
   return {
     email: payload.email,
@@ -42,10 +47,12 @@ export function createMiddlecatUser(
 async function killMiddlecatSession(
   middlecat: string | null,
   refresh_token: string,
+  signOutMiddlecat: boolean,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ): Promise<void> {
   const body = {
     grant_type: "kill_session",
+    sign_out: signOutMiddlecat,
     refresh_token,
   };
   await fetch(`${middlecat}/api/token`, {

@@ -68,20 +68,23 @@ export default function useMiddlecat({
     [fixedResource]
   );
 
-  const signOut = useCallback(() => {
-    setLoading(true);
-    localStorage.setItem("resource", "");
-    if (!user) return;
-    // currently doesn't tell the user if could not kill
-    // session because middlecat can't be reached. Should we?
-    user
-      .killSession()
-      .catch((e: Error) => console.error(e))
-      .finally(() => {
-        setLoading(false);
-        setUser(undefined);
-      });
-  }, [user]);
+  const signOut = useCallback(
+    (signOutMiddlecat: boolean = false) => {
+      setLoading(true);
+      localStorage.setItem("resource", "");
+      if (!user) return;
+      // currently doesn't tell the user if could not kill
+      // session because middlecat can't be reached. Should we?
+      user
+        .killSession(signOutMiddlecat)
+        .catch((e: Error) => console.error(e))
+        .finally(() => {
+          setLoading(false);
+          setUser(undefined);
+        });
+    },
+    [user]
+  );
 
   useEffect(() => {
     // This runs once on mount, and can do two things
