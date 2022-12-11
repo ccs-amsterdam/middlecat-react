@@ -9,7 +9,7 @@ export interface MiddlecatUser {
   image: string;
   /** Axios instance to make API calls */
   api: Axios;
-  /** Kill a middlecat session. Used internally on signout */
+  /** Kill the AmCAT session and optionally also the MiddleCat session. Used internally on signout */
   killSession: (signOutMiddlecat: boolean) => Promise<void>;
 }
 

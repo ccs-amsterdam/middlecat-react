@@ -5,6 +5,7 @@ import {
   useRef,
   Dispatch,
   SetStateAction,
+  useMemo,
 } from "react";
 import { safeURL, silentDeleteSearchParams } from "./util";
 import { authorizationCode, authorize } from "./middlecatOauth";
@@ -30,7 +31,8 @@ import { refreshToken } from "./selfRefreshingAxios";
  * added to the axios call. Also, we use short-lived access tokens with
  * rotating refresh tokens and automatic
  *
- * @param fixedResource Optinally, use a fixed resource (e.g., https://amcat.vu.nl)
+ * @param autoReconnect If user did not log out, automatically reconnect on next visit
+ * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
  * @returns
  */
 
@@ -129,13 +131,15 @@ export default function useMiddlecat({
     if (autoReconnect) signIn(resource);
   }, [autoReconnect, storeToken, signIn]);
 
-  const AuthForm = authFormGenerator({
-    fixedResource: fixedResource || "",
-    user,
-    loading,
-    signIn,
-    signOut,
-  });
+  const AuthForm = useMemo(() => {
+    return authFormGenerator({
+      fixedResource: fixedResource || "",
+      user,
+      loading,
+      signIn,
+      signOut,
+    });
+  }, [fixedResource, user, loading, signIn, signOut]);
 
   return { user, AuthForm, loading, signIn, signOut };
 }

@@ -21,7 +21,7 @@ function App() {
   return (
     <div className="Page">
       <div className="Container">
-        <AuthForm resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource" />
+        <AuthForm resourceSuggestion="http://localhost:3000/api/demo_resource" />
         <div style={{ color: "grey" }}>
           <p>{msg}</p>
           <p style={{ fontSize: "1.2rem" }}>

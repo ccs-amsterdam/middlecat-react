@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import styled from "styled-components";
 import { MiddlecatUser } from "./types";
 
@@ -95,6 +95,12 @@ interface AuthFormProps {
   signOutLabel?: string;
 }
 
+/** Returns an AuthForm component in which the
+ * props (fixedResource, user, loading, signIn, signOut)
+ * are included via closure. This way,
+ * the only props that need to be specified for
+ * the auth form are the AuthFormProps
+ */
 export default function authFormGenerator({
   fixedResource,
   user,
@@ -102,7 +108,7 @@ export default function authFormGenerator({
   signIn,
   signOut,
 }: Props) {
-  return ({
+  const AuthForm = ({
     primary,
     secondary,
     resourceLabel,
@@ -139,6 +145,8 @@ export default function authFormGenerator({
       </AuthContainer>
     );
   };
+
+  return memo(AuthForm);
 }
 
 interface SignInFormProps {
@@ -207,11 +215,17 @@ function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
   return (
     <>
       <div className="User">
-        <img className="Image" src={user?.image} alt="profile " />
+        {user?.image ? (
+          <img className="Image" src={user.image} alt="profile" />
+        ) : null}
         <div>
-          {user?.name}
-          <br />
-          <span style={{ fontSize: "1.2rem" }}>{user?.email}</span>
+          {user?.name || user?.email}
+          {user?.name ? (
+            <>
+              <br />
+              <span style={{ fontSize: "1.2rem" }}>{user?.email}</span>
+            </>
+          ) : null}
         </div>
       </div>
       <br />
