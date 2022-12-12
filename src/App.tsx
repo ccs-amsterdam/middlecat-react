@@ -12,12 +12,17 @@ function App() {
       return;
     }
     const timer = setInterval(async () => {
-      const res = await user.api.post("test");
-      setMsg(res.data);
+      try {
+        const res = await user.api.post("test");
+        setMsg(res.data);
+      } catch (e) {
+        setMsg(`Could not validate token`);
+      }
     }, 1000);
     return () => clearInterval(timer);
   }, [user]);
 
+  console.log(msg);
   return (
     <div className="Page">
       <div className="Container">
@@ -26,7 +31,7 @@ function App() {
           <p>{msg}</p>
           <p style={{ fontSize: "1.2rem" }}>
             {msg &&
-              "Except it doesn't, because token is automatically refreshed about 10 seconds before it expires"}
+              "token is automatically refreshed about 10 seconds before it expires"}
           </p>
         </div>
       </div>

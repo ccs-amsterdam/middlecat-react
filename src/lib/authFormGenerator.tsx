@@ -12,6 +12,10 @@ const AuthContainer = styled.div<LayoutProps>`
   --secondary: ${(p) => p.color || "#1d7269"};
   color: var(--secondary);
   box-sizing: border-box;
+  font-size: 1.8rem;
+  margin: auto;
+  width: 100%;
+  max-width: 400px;
 
   & .User {
     display: flex;

@@ -18,7 +18,14 @@ export async function authorize(resource: string) {
   localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
   localStorage.setItem(resource + "_state", state);
   localStorage.setItem(resource + "_middlecat", middlecat_url);
-  return `${middlecat_url}/authorize?state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
+
+  // the client_id has to be the host of the redirect_uri. At some point
+  // we might add support for registered client_id, where redirect-uris are
+  // known.
+  const clientURL = new URL(redirect_uri);
+  const client_id = clientURL.host;
+
+  return `${middlecat_url}/authorize?response_type=code&client_id=${client_id}&state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
 }
 
 export async function authorizationCode(

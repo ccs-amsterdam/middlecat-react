@@ -42,11 +42,19 @@ interface useMiddlecatParams {
   storeToken?: boolean;
 }
 
+interface useMiddlecatOut {
+  user: MiddlecatUser | undefined;
+  AuthForm: any;
+  loading: boolean;
+  signIn: (resource?: string) => void;
+  signOut: (signOutMiddlecat: boolean) => void;
+}
+
 export default function useMiddlecat({
   fixedResource,
   autoReconnect = true,
   storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
-}: useMiddlecatParams = {}) {
+}: useMiddlecatParams = {}): useMiddlecatOut {
   const [user, setUser] = useState<MiddlecatUser>();
   const runOnce = useRef(true);
   const [loading, setLoading] = useState(true);

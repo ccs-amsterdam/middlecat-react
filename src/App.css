@@ -21,7 +21,6 @@ html {
 }
 
 .Page {
-  font-size: 18px;
   display: flex;
   min-height: 75vh;
 }
@@ -29,7 +28,6 @@ html {
 .Page .Container {
   margin: auto;
   width: 100%;
-  max-width: 400px;
   backdrop-filter: blur(3px);
   border-radius: 10px;
   position: relative;
