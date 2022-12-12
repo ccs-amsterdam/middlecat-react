@@ -16,6 +16,7 @@ const AuthContainer = styled.div<LayoutProps>`
   margin: auto;
   width: 100%;
   max-width: 400px;
+  text-align: center;
 
   & .User {
     display: flex;
