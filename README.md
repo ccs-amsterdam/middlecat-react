@@ -1,6 +1,6 @@
 # Using Middlecat Authentication in React
 
-This is a hook for using MiddleCat authentication. See the [ccs-amsterdam/middlecat](ccs-amsterdam/middlecat) repository for details about what on earth Middlecat is supposed to be.
+This is a hook for using MiddleCat authentication. See the [ccs-amsterdam/middlecat](https://github.com/ccs-amsterdam/middlecat) repository for details about what on earth Middlecat is supposed to be.
 
 # Using the hook
 
