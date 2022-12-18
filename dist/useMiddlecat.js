@@ -22,6 +22,7 @@ function useMiddlecat(_a) {
         (0, middlecatOauth_1.authorize)(r)
             .then(function (middlecat_redirect) {
             localStorage.setItem("resource", r);
+            localStorage.setItem("awaiting_oauth_redirect", "true");
             window.location.href = middlecat_redirect;
         })
             .catch(function (e) {
@@ -62,9 +63,13 @@ function useMiddlecat(_a) {
         var searchParams = new URLSearchParams(window.location.search);
         var code = searchParams.get("code");
         var state = searchParams.get("state");
+        var inFlow = localStorage.getItem("awaiting_oauth_redirect") === "true";
+        localStorage.setItem("awaiting_oauth_redirect", "false");
         (0, util_1.silentDeleteSearchParams)(["code", "state"]);
-        // If code and state parameters are given, complete the oauth flow
-        if (code && state) {
+        // If in oauth flow and code and state parameters are given, complete the oauth flow.
+        // (the inFlow shouldn't be needed since we remove the URL parameters, but this somehow
+        //  doesn't work when useMiddlecat is imported in nextJS. so this is just to be sure)
+        if (inFlow && code && state) {
             connectWithAuthGrant(resource, code, state, storeToken, setUser, setLoading);
             return;
         }

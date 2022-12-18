@@ -221,7 +221,12 @@ function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
     <>
       <div className="User">
         {user?.image ? (
-          <img className="Image" src={user.image} alt="profile" />
+          <img
+            className="Image"
+            src={user.image}
+            referrer-policy="no-referrer"
+            alt=""
+          />
         ) : null}
         <div>
           {user?.name || user?.email}

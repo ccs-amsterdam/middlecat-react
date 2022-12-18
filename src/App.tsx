@@ -22,14 +22,13 @@ function App() {
     return () => clearInterval(timer);
   }, [user]);
 
-  console.log(msg);
   return (
     <div className="Page">
       <div className="Container">
         <AuthForm resourceSuggestion="http://localhost:3000/api/demo_resource" />
         <div style={{ color: "grey" }}>
           <p>{msg}</p>
-          <p style={{ fontSize: "1.2rem" }}>
+          <p style={{ fontSize: "1.2em" }}>
             {msg &&
               "token is automatically refreshed about 10 seconds before it expires"}
           </p>
