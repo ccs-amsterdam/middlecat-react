@@ -7,7 +7,7 @@ import Cookies from "cookies";
  * bff should be set to this endpoint (e.g., bff = '/api/bffAuth')
  *
  * To secure the refresh_token, this handler intercepts the
- * authorization_code and refresh_token grant flows. The refresh
+ * authorization_code, refresh_token and kill_session grant flows. The refresh
  * token is then not returned directly to the client application, but
  * instead stored in a httponly samesite cookie.
  * @param req
@@ -25,7 +25,10 @@ export default async function bffAuthHandler(req: any, res: any) {
 
     // if bff auth is used, request will not contain the refresh_token,
     // but the token is instead stored in a httponly samesite cookie
-    if (req.body.grant_type === "refresh_token")
+    if (
+      req.body.grant_type === "refresh_token" ||
+      req.body.grant_type === "kill_session"
+    )
       req.body.refresh_token = cookies.get(refreshCookie);
 
     const tokens_res = await fetch(req.body.middlecat_url, {

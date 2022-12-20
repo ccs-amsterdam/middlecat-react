@@ -41,6 +41,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createMiddlecatUser = void 0;
 var jwt_decode_1 = __importDefault(require("jwt-decode"));
+var middlecatOauth_1 = require("./middlecatOauth");
 var selfRefreshingAxios_1 = __importDefault(require("./selfRefreshingAxios"));
 /**
  *
@@ -58,7 +59,7 @@ function createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUs
     var api = (0, selfRefreshingAxios_1.default)(payload.resource, access_token, refresh_token, storeToken, bff, setUser);
     var killSession = function (signOutMiddlecat) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            return [2 /*return*/, killMiddlecatSession(payload.middlecat, refresh_token, signOutMiddlecat, setUser)];
+            return [2 /*return*/, (0, middlecatOauth_1.killMiddlecatSession)(payload.middlecat, refresh_token, signOutMiddlecat, payload.resource, bff, setUser)];
         });
     }); };
     return {
@@ -70,30 +71,3 @@ function createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUs
     };
 }
 exports.createMiddlecatUser = createMiddlecatUser;
-function killMiddlecatSession(middlecat, refresh_token, signOutMiddlecat, setUser) {
-    return __awaiter(this, void 0, void 0, function () {
-        var body;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    body = {
-                        grant_type: "kill_session",
-                        sign_out: signOutMiddlecat,
-                        refresh_token: refresh_token,
-                    };
-                    return [4 /*yield*/, fetch("".concat(middlecat, "/api/token"), {
-                            method: "POST",
-                            headers: {
-                                Accept: "application/json",
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(body),
-                        })];
-                case 1:
-                    _a.sent();
-                    setUser(undefined);
-                    return [2 /*return*/];
-            }
-        });
-    });
-}

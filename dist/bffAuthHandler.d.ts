@@ -5,7 +5,7 @@
  * bff should be set to this endpoint (e.g., bff = '/api/bffAuth')
  *
  * To secure the refresh_token, this handler intercepts the
- * authorization_code and refresh_token grant flows. The refresh
+ * authorization_code, refresh_token and kill_session grant flows. The refresh
  * token is then not returned directly to the client application, but
  * instead stored in a httponly samesite cookie.
  * @param req

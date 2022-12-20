@@ -1,5 +1,6 @@
 import jwtDecode from "jwt-decode";
 import { Dispatch, SetStateAction } from "react";
+import { killMiddlecatSession } from "./middlecatOauth";
 import selfRefreshingAxios from "./selfRefreshingAxios";
 import { AccessTokenPayload, MiddlecatUser } from "./types";
 
@@ -34,6 +35,8 @@ export function createMiddlecatUser(
       payload.middlecat,
       refresh_token,
       signOutMiddlecat,
+      payload.resource,
+      bff,
       setUser
     );
 
@@ -44,26 +47,4 @@ export function createMiddlecatUser(
     api,
     killSession,
   };
-}
-
-async function killMiddlecatSession(
-  middlecat: string | null,
-  refresh_token: string,
-  signOutMiddlecat: boolean,
-  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
-): Promise<void> {
-  const body = {
-    grant_type: "kill_session",
-    sign_out: signOutMiddlecat,
-    refresh_token,
-  };
-  await fetch(`${middlecat}/api/token`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  setUser(undefined);
 }

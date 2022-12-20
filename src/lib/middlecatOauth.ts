@@ -1,4 +1,6 @@
 import pkceChallenge from "pkce-challenge";
+import { Dispatch, SetStateAction } from "react";
+import { MiddlecatUser } from "./types";
 
 import { safeURL } from "./util";
 
@@ -104,4 +106,41 @@ export async function refreshToken(
   });
 
   return await res.json();
+}
+
+/**
+ * Not really part of the oauth flow, but included it in the /token
+ * endpoint as a grant_type because it has many similarities. Basically,
+ * we use a refresh token (even an expired one) to kill a middlecat session.
+ */
+export async function killMiddlecatSession(
+  middlecat: string | null,
+  refresh_token: string,
+  signOutMiddlecat: boolean,
+  resource: string,
+  bff: string | undefined,
+  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
+): Promise<void> {
+  const body: any = {
+    grant_type: "kill_session",
+    sign_out: signOutMiddlecat,
+    refresh_token,
+  };
+
+  let url = `${middlecat}/api/token`;
+  if (bff) {
+    body.middlecat_url = url;
+    body.resource = resource;
+    url = bff;
+  }
+
+  await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  setUser(undefined);
 }

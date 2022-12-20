@@ -39,7 +39,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = exports.authorizationCode = exports.authorize = void 0;
+exports.killMiddlecatSession = exports.refreshToken = exports.authorizationCode = exports.authorize = void 0;
 var pkce_challenge_1 = __importDefault(require("pkce-challenge"));
 var util_1 = require("./util");
 function authorize(resource) {
@@ -156,3 +156,42 @@ function refreshToken(middlecat, refresh_token, resource, bff) {
     });
 }
 exports.refreshToken = refreshToken;
+/**
+ * Not really part of the oauth flow, but included it in the /token
+ * endpoint as a grant_type because it has many similarities. Basically,
+ * we use a refresh token (even an expired one) to kill a middlecat session.
+ */
+function killMiddlecatSession(middlecat, refresh_token, signOutMiddlecat, resource, bff, setUser) {
+    return __awaiter(this, void 0, void 0, function () {
+        var body, url;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    body = {
+                        grant_type: "kill_session",
+                        sign_out: signOutMiddlecat,
+                        refresh_token: refresh_token,
+                    };
+                    url = "".concat(middlecat, "/api/token");
+                    if (bff) {
+                        body.middlecat_url = url;
+                        body.resource = resource;
+                        url = bff;
+                    }
+                    return [4 /*yield*/, fetch(url, {
+                            method: "POST",
+                            headers: {
+                                Accept: "application/json",
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(body),
+                        })];
+                case 1:
+                    _a.sent();
+                    setUser(undefined);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+exports.killMiddlecatSession = killMiddlecatSession;
