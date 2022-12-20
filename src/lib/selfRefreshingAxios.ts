@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 import axios from "axios";
 import { AccessTokenPayload, MiddlecatUser } from "./types";
 import jwtDecode from "jwt-decode";
+import { refreshToken } from "./middlecatOauth";
 
 /**
  * Creates an axios instance for making api requests to the AmCAT server.
@@ -19,6 +20,7 @@ export default function selfRefreshingAxios(
   access_token: string,
   refresh_token: string,
   storeToken: boolean,
+  bff: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ) {
   const api = axios.create();
@@ -33,11 +35,13 @@ export default function selfRefreshingAxios(
     async (config) => {
       const { access_token, refresh_token } = await getTokens(
         currentAccessToken,
-        currentRefreshToken
+        currentRefreshToken,
+        resource,
+        bff
       );
       currentAccessToken = access_token;
       currentRefreshToken = refresh_token;
-      if (storeToken)
+      if (storeToken && !bff)
         localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
       if (!currentAccessToken) {
         setUser(undefined);
@@ -65,32 +69,19 @@ export default function selfRefreshingAxios(
 /**
  * Checks if access token is about to expire. If so, we first refresh the tokens.
  */
-async function getTokens(access_token: string, refresh_token: string) {
+async function getTokens(
+  access_token: string,
+  refresh_token: string,
+  resource: string,
+  bff?: string
+) {
   const payload: AccessTokenPayload = jwtDecode(access_token);
 
   const now = Date.now() / 1000;
   const nearfuture = now + 10; // refresh x seconds before expires
   if (payload.exp < nearfuture) {
-    return await refreshToken(payload.middlecat, refresh_token);
+    return await refreshToken(payload.middlecat, refresh_token, resource, bff);
   } else {
     return { access_token, refresh_token };
   }
-}
-
-export async function refreshToken(middlecat: string, refresh_token: string) {
-  const body = {
-    grant_type: "refresh_token",
-    refresh_token,
-  };
-
-  const res = await fetch(`${middlecat}/api/token`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  return await res.json();
 }

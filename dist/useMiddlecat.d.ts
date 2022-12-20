@@ -16,12 +16,14 @@ import { MiddlecatUser } from "./types";
  *
  * @param autoReconnect If user did not log out, automatically reconnect on next visit
  * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
+ * @param bff           If TRUE, and
  * @returns
  */
 interface useMiddlecatParams {
     fixedResource?: string;
     autoReconnect?: boolean;
     storeToken?: boolean;
+    bff?: string | undefined;
 }
 interface useMiddlecatOut {
     user: MiddlecatUser | undefined;
@@ -30,5 +32,6 @@ interface useMiddlecatOut {
     signIn: (resource?: string) => void;
     signOut: (signOutMiddlecat: boolean) => void;
 }
-export default function useMiddlecat({ fixedResource, autoReconnect, storeToken, }?: useMiddlecatParams): useMiddlecatOut;
+export default function useMiddlecat({ fixedResource, autoReconnect, storeToken, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+bff, }?: useMiddlecatParams): useMiddlecatOut;
 export {};

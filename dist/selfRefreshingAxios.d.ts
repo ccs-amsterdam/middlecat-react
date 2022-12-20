@@ -11,5 +11,4 @@ import { MiddlecatUser } from "./types";
  * @param refresh_token
  * @returns
  */
-export default function selfRefreshingAxios(resource: string, access_token: string, refresh_token: string, storeToken: boolean, setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>): import("axios").AxiosInstance;
-export declare function refreshToken(middlecat: string, refresh_token: string): Promise<any>;
+export default function selfRefreshingAxios(resource: string, access_token: string, refresh_token: string, storeToken: boolean, bff: string | undefined, setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>): import("axios").AxiosInstance;

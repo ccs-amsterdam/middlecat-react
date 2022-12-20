@@ -39,9 +39,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = void 0;
 var axios_1 = __importDefault(require("axios"));
 var jwt_decode_1 = __importDefault(require("jwt-decode"));
+var middlecatOauth_1 = require("./middlecatOauth");
 /**
  * Creates an axios instance for making api requests to the AmCAT server.
  * The tokens are stored in the closure, and are automatically refreshed
@@ -53,7 +53,7 @@ var jwt_decode_1 = __importDefault(require("jwt-decode"));
  * @param refresh_token
  * @returns
  */
-function selfRefreshingAxios(resource, access_token, refresh_token, storeToken, setUser) {
+function selfRefreshingAxios(resource, access_token, refresh_token, storeToken, bff, setUser) {
     var _this = this;
     var api = axios_1.default.create();
     // use in intercepter as closure
@@ -65,12 +65,12 @@ function selfRefreshingAxios(resource, access_token, refresh_token, storeToken, 
         var _a, access_token, refresh_token;
         return __generator(this, function (_b) {
             switch (_b.label) {
-                case 0: return [4 /*yield*/, getTokens(currentAccessToken, currentRefreshToken)];
+                case 0: return [4 /*yield*/, getTokens(currentAccessToken, currentRefreshToken, resource, bff)];
                 case 1:
                     _a = _b.sent(), access_token = _a.access_token, refresh_token = _a.refresh_token;
                     currentAccessToken = access_token;
                     currentRefreshToken = refresh_token;
-                    if (storeToken)
+                    if (storeToken && !bff)
                         localStorage.setItem("".concat(resource, "_refresh"), currentRefreshToken);
                     if (!currentAccessToken) {
                         setUser(undefined);
@@ -94,7 +94,7 @@ exports.default = selfRefreshingAxios;
 /**
  * Checks if access token is about to expire. If so, we first refresh the tokens.
  */
-function getTokens(access_token, refresh_token) {
+function getTokens(access_token, refresh_token, resource, bff) {
     return __awaiter(this, void 0, void 0, function () {
         var payload, now, nearfuture;
         return __generator(this, function (_a) {
@@ -104,37 +104,10 @@ function getTokens(access_token, refresh_token) {
                     now = Date.now() / 1000;
                     nearfuture = now + 10;
                     if (!(payload.exp < nearfuture)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, refreshToken(payload.middlecat, refresh_token)];
+                    return [4 /*yield*/, (0, middlecatOauth_1.refreshToken)(payload.middlecat, refresh_token, resource, bff)];
                 case 1: return [2 /*return*/, _a.sent()];
                 case 2: return [2 /*return*/, { access_token: access_token, refresh_token: refresh_token }];
             }
         });
     });
 }
-function refreshToken(middlecat, refresh_token) {
-    return __awaiter(this, void 0, void 0, function () {
-        var body, res;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    body = {
-                        grant_type: "refresh_token",
-                        refresh_token: refresh_token,
-                    };
-                    return [4 /*yield*/, fetch("".concat(middlecat, "/api/token"), {
-                            method: "POST",
-                            headers: {
-                                Accept: "application/json",
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(body),
-                        })];
-                case 1:
-                    res = _a.sent();
-                    return [4 /*yield*/, res.json()];
-                case 2: return [2 /*return*/, _a.sent()];
-            }
-        });
-    });
-}
-exports.refreshToken = refreshToken;

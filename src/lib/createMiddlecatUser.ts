@@ -15,6 +15,7 @@ export function createMiddlecatUser(
   access_token: string,
   refresh_token: string,
   storeToken: boolean,
+  bff: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ): MiddlecatUser | undefined {
   if (!access_token) return undefined;
@@ -25,6 +26,7 @@ export function createMiddlecatUser(
     access_token,
     refresh_token,
     storeToken,
+    bff,
     setUser
   );
   const killSession = async (signOutMiddlecat: boolean) =>

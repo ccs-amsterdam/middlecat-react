@@ -3,9 +3,19 @@ import pkceChallenge from "pkce-challenge";
 import { safeURL } from "./util";
 
 export async function authorize(resource: string) {
-  const redirect_uri = window.location.href;
+  // we makes sure that the redirect url doesn't contain parameters from a previous oauth flow.
+  // ideally these parameters are deleted after the flow, but somehow this doesn't always work (especially in nextJS).
+  const redirectURL = new URL(window.location.href);
+  redirectURL.searchParams.delete("state");
+  redirectURL.searchParams.delete("redirect_uri");
+  redirectURL.searchParams.delete("code");
+  const redirect_uri =
+    redirectURL.origin + redirectURL.pathname + redirectURL.search;
+
   const pkce = pkceChallenge();
   const state = (Math.random() + 1).toString(36).substring(2);
+  const clientURL = new URL(redirect_uri);
+  const clientId = clientURL.host;
 
   const res = await fetch(`${safeURL(resource)}/middlecat`);
   let { middlecat_url } = await res.json();
@@ -18,20 +28,14 @@ export async function authorize(resource: string) {
   localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
   localStorage.setItem(resource + "_state", state);
   localStorage.setItem(resource + "_middlecat", middlecat_url);
-
-  // the client_id has to be the host of the redirect_uri. At some point
-  // we might add support for registered client_id, where redirect-uris are
-  // known.
-  const clientURL = new URL(redirect_uri);
-  const client_id = clientURL.host;
-
-  return `${middlecat_url}/authorize?response_type=code&client_id=${client_id}&state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
+  return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
 }
 
 export async function authorizationCode(
   resource: string,
   code: string,
-  state: string
+  state: string,
+  bff: string | undefined
 ) {
   const sendState = localStorage.getItem(resource + "_state");
   const middlecat = localStorage.getItem(resource + "_middlecat");
@@ -42,13 +46,20 @@ export async function authorizationCode(
     // send an obvious wrong code_verifier, which will cause middlecat to kill the session
     code_verifier = "DoYouReallyWantToHurtMe?";
   }
-  const body = {
+  const body: any = {
     grant_type: "authorization_code",
     code,
     code_verifier,
   };
 
-  const res = await fetch(`${middlecat}/api/token`, {
+  let url = `${middlecat}/api/token`;
+  if (bff) {
+    body.middlecat_url = url;
+    body.resource = resource;
+    url = bff;
+  }
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -61,6 +72,36 @@ export async function authorizationCode(
   // their power, but still feels nice
   localStorage.removeItem(resource + "_code_verifier");
   localStorage.removeItem(resource + "_state");
+
+  return await res.json();
+}
+
+export async function refreshToken(
+  middlecat: string,
+  refresh_token: string,
+  resource: string,
+  bff: string | undefined
+) {
+  const body: any = {
+    grant_type: "refresh_token",
+    refresh_token,
+  };
+
+  let url = `${middlecat}/api/token`;
+  if (bff) {
+    body.middlecat_url = url;
+    body.resource = resource;
+    url = bff;
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
 
   return await res.json();
 }

@@ -39,18 +39,24 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authorizationCode = exports.authorize = void 0;
+exports.refreshToken = exports.authorizationCode = exports.authorize = void 0;
 var pkce_challenge_1 = __importDefault(require("pkce-challenge"));
 var util_1 = require("./util");
 function authorize(resource) {
     return __awaiter(this, void 0, void 0, function () {
-        var redirect_uri, pkce, state, res, middlecat_url, clientURL, client_id;
+        var redirectURL, redirect_uri, pkce, state, clientURL, clientId, res, middlecat_url;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    redirect_uri = window.location.href;
+                    redirectURL = new URL(window.location.href);
+                    redirectURL.searchParams.delete("state");
+                    redirectURL.searchParams.delete("redirect_uri");
+                    redirectURL.searchParams.delete("code");
+                    redirect_uri = redirectURL.origin + redirectURL.pathname + redirectURL.search;
                     pkce = (0, pkce_challenge_1.default)();
                     state = (Math.random() + 1).toString(36).substring(2);
+                    clientURL = new URL(redirect_uri);
+                    clientId = clientURL.host;
                     return [4 /*yield*/, fetch("".concat((0, util_1.safeURL)(resource), "/middlecat"))];
                 case 1:
                     res = _a.sent();
@@ -65,17 +71,15 @@ function authorize(resource) {
                     localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
                     localStorage.setItem(resource + "_state", state);
                     localStorage.setItem(resource + "_middlecat", middlecat_url);
-                    clientURL = new URL(redirect_uri);
-                    client_id = clientURL.host;
-                    return [2 /*return*/, "".concat(middlecat_url, "/authorize?response_type=code&client_id=").concat(client_id, "&state=").concat(state, "&redirect_uri=").concat(redirect_uri, "&resource=").concat(resource, "&code_challenge=").concat(pkce.code_challenge)];
+                    return [2 /*return*/, "".concat(middlecat_url, "/authorize?client_id=").concat(clientId, "&state=").concat(state, "&redirect_uri=").concat(redirect_uri, "&resource=").concat(resource, "&code_challenge=").concat(pkce.code_challenge)];
             }
         });
     });
 }
 exports.authorize = authorize;
-function authorizationCode(resource, code, state) {
+function authorizationCode(resource, code, state, bff) {
     return __awaiter(this, void 0, void 0, function () {
-        var sendState, middlecat, code_verifier, body, res;
+        var sendState, middlecat, code_verifier, body, url, res;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -92,7 +96,13 @@ function authorizationCode(resource, code, state) {
                         code: code,
                         code_verifier: code_verifier,
                     };
-                    return [4 /*yield*/, fetch("".concat(middlecat, "/api/token"), {
+                    url = "".concat(middlecat, "/api/token");
+                    if (bff) {
+                        body.middlecat_url = url;
+                        body.resource = resource;
+                        url = bff;
+                    }
+                    return [4 /*yield*/, fetch(url, {
                             method: "POST",
                             headers: {
                                 Accept: "application/json",
@@ -113,3 +123,36 @@ function authorizationCode(resource, code, state) {
     });
 }
 exports.authorizationCode = authorizationCode;
+function refreshToken(middlecat, refresh_token, resource, bff) {
+    return __awaiter(this, void 0, void 0, function () {
+        var body, url, res;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    body = {
+                        grant_type: "refresh_token",
+                        refresh_token: refresh_token,
+                    };
+                    url = "".concat(middlecat, "/api/token");
+                    if (bff) {
+                        body.middlecat_url = url;
+                        body.resource = resource;
+                        url = bff;
+                    }
+                    return [4 /*yield*/, fetch(url, {
+                            method: "POST",
+                            headers: {
+                                Accept: "application/json",
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(body),
+                        })];
+                case 1:
+                    res = _a.sent();
+                    return [4 /*yield*/, res.json()];
+                case 2: return [2 /*return*/, _a.sent()];
+            }
+        });
+    });
+}
+exports.refreshToken = refreshToken;

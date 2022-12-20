@@ -12,7 +12,7 @@ import { authorizationCode, authorize } from "./middlecatOauth";
 import { MiddlecatUser } from "./types";
 import { createMiddlecatUser } from "./createMiddlecatUser";
 import authFormGenerator from "./authFormGenerator";
-import { refreshToken } from "./selfRefreshingAxios";
+import { refreshToken } from "./middlecatOauth";
 
 // This hook is to be used in React applications using middlecat
 
@@ -33,6 +33,7 @@ import { refreshToken } from "./selfRefreshingAxios";
  *
  * @param autoReconnect If user did not log out, automatically reconnect on next visit
  * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
+ * @param bff           If TRUE, and
  * @returns
  */
 
@@ -40,6 +41,7 @@ interface useMiddlecatParams {
   fixedResource?: string;
   autoReconnect?: boolean;
   storeToken?: boolean;
+  bff?: string | undefined;
 }
 
 interface useMiddlecatOut {
@@ -54,6 +56,7 @@ export default function useMiddlecat({
   fixedResource,
   autoReconnect = true,
   storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+  bff = undefined,
 }: useMiddlecatParams = {}): useMiddlecatOut {
   const [user, setUser] = useState<MiddlecatUser>();
   const runOnce = useRef(true);
@@ -128,6 +131,7 @@ export default function useMiddlecat({
         code,
         state,
         storeToken,
+        bff,
         setUser,
         setLoading
       );
@@ -135,14 +139,14 @@ export default function useMiddlecat({
     }
 
     // If autoReconnect and storeToken are used, reconnect with the stored refresh token
-    if (autoReconnect && storeToken) {
-      connectWithRefresh(resource, storeToken, setUser, setLoading);
+    if (autoReconnect && (storeToken || bff)) {
+      connectWithRefresh(resource, storeToken, bff, setUser, setLoading);
       return;
     }
 
     // If autoReconnect is used without storeToken, redirect to middlecat
-    if (autoReconnect) signIn(resource);
-  }, [autoReconnect, storeToken, signIn]);
+    //if (autoReconnect) signIn(resource);
+  }, [autoReconnect, storeToken, signIn, bff]);
 
   const AuthForm = useMemo(() => {
     return authFormGenerator({
@@ -162,15 +166,17 @@ function connectWithAuthGrant(
   code: string,
   state: string,
   storeToken: boolean,
+  bff: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
   setLoading: Dispatch<SetStateAction<boolean>>
 ) {
-  authorizationCode(resource, code, state)
+  authorizationCode(resource, code, state, bff)
     .then(({ access_token, refresh_token }) => {
       const user = createMiddlecatUser(
         access_token,
         refresh_token,
         storeToken,
+        bff,
         setUser
       );
       localStorage.setItem("resource", resource);
@@ -186,19 +192,22 @@ function connectWithAuthGrant(
 
 function connectWithRefresh(
   resource: string,
-
   storeToken: boolean,
+  bff: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
   setLoading: Dispatch<SetStateAction<boolean>>
 ) {
   const middlecat = localStorage.getItem(resource + "_middlecat") || "";
-  const refresh_token = localStorage.getItem(resource + "_refresh") || "";
-  refreshToken(middlecat, refresh_token)
+  const refresh_token =
+    storeToken && !bff ? localStorage.getItem(resource + "_refresh") : null;
+
+  refreshToken(middlecat, refresh_token || "", resource, bff)
     .then(({ access_token, refresh_token }) => {
       const user = createMiddlecatUser(
         access_token,
         refresh_token,
         storeToken,
+        bff,
         setUser
       );
       localStorage.setItem("resource", resource);

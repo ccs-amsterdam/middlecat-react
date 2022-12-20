@@ -11,12 +11,19 @@ const AuthContainer = styled.div<LayoutProps>`
   --primary: ${(p) => p.color || "#38c7b9"};
   --secondary: ${(p) => p.color || "#1d7269"};
   color: var(--secondary);
-  box-sizing: border-box;
-  font-size: 1.8rem;
-  margin: auto;
-  width: 100%;
-  max-width: 400px;
+  display: flex;
   text-align: center;
+  flex-direction: column;
+  position: relative;
+
+  & .InnerContainer {
+    box-sizing: border-box;
+    font-size: 1.8rem;
+    margin: auto;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+  }
 
   & .User {
     display: flex;
@@ -146,7 +153,9 @@ export default function authFormGenerator({
 
     return (
       <AuthContainer primary={primary} secondary={secondary}>
-        <ConditionalRender />
+        <div className="InnerContainer">
+          <ConditionalRender />
+        </div>
       </AuthContainer>
     );
   };

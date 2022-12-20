@@ -39,61 +39,64 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createMiddlecatUser = void 0;
-var jwt_decode_1 = __importDefault(require("jwt-decode"));
-var selfRefreshingAxios_1 = __importDefault(require("./selfRefreshingAxios"));
+var cookies_1 = __importDefault(require("cookies"));
 /**
+ * If useMiddlecat is used on a client that has a samesite backend, the backend
+ * can be used to secure the refresh token. This handler should then be
+ * put at an endpoint (like api/bffAuth), and in useMiddlecat the settings
+ * bff should be set to this endpoint (e.g., bff = '/api/bffAuth')
  *
- * @param access_token
- * @param refresh_token
- * @param storeToken
- * @param setUser        includes setUser so that it can set state to undefined if refresh fails or session is killed
+ * To secure the refresh_token, this handler intercepts the
+ * authorization_code and refresh_token grant flows. The refresh
+ * token is then not returned directly to the client application, but
+ * instead stored in a httponly samesite cookie.
+ * @param req
+ * @param res
  * @returns
  */
-function createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUser) {
-    var _this = this;
-    if (!access_token)
-        return undefined;
-    var payload = (0, jwt_decode_1.default)(access_token);
-    var api = (0, selfRefreshingAxios_1.default)(payload.resource, access_token, refresh_token, storeToken, bff, setUser);
-    var killSession = function (signOutMiddlecat) { return __awaiter(_this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/, killMiddlecatSession(payload.middlecat, refresh_token, signOutMiddlecat, setUser)];
-        });
-    }); };
-    return {
-        email: payload.email,
-        name: payload.name,
-        image: payload.image,
-        api: api,
-        killSession: killSession,
-    };
-}
-exports.createMiddlecatUser = createMiddlecatUser;
-function killMiddlecatSession(middlecat, refresh_token, signOutMiddlecat, setUser) {
+function bffAuthHandler(req, res) {
     return __awaiter(this, void 0, void 0, function () {
-        var body;
+        var cookies, resource64, refreshCookie, tokens_res, tokens, e_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    body = {
-                        grant_type: "kill_session",
-                        sign_out: signOutMiddlecat,
-                        refresh_token: refresh_token,
-                    };
-                    return [4 /*yield*/, fetch("".concat(middlecat, "/api/token"), {
+                    _a.trys.push([0, 3, , 4]);
+                    cookies = new cookies_1.default(req, res);
+                    resource64 = Buffer.from(req.body.resource).toString("base64");
+                    refreshCookie = "refresh_" + resource64;
+                    // if bff auth is used, request will not contain the refresh_token,
+                    // but the token is instead stored in a httponly samesite cookie
+                    if (req.body.grant_type === "refresh_token")
+                        req.body.refresh_token = cookies.get(refreshCookie);
+                    return [4 /*yield*/, fetch(req.body.middlecat_url, {
                             method: "POST",
                             headers: {
                                 Accept: "application/json",
                                 "Content-Type": "application/json",
                             },
-                            body: JSON.stringify(body),
+                            body: JSON.stringify(req.body),
                         })];
                 case 1:
-                    _a.sent();
-                    setUser(undefined);
-                    return [2 /*return*/];
+                    tokens_res = _a.sent();
+                    return [4 /*yield*/, tokens_res.json()];
+                case 2:
+                    tokens = _a.sent();
+                    cookies.set(refreshCookie, tokens.refresh_token, {
+                        secure: process.env.NODE_ENV !== "development",
+                        httpOnly: true,
+                        sameSite: "strict",
+                        maxAge: 60 * 60 * 24 * 30 * 1000, //    30 days
+                    });
+                    // remove refresh_token from response, so that it is not returned to the client
+                    tokens.refresh_token = null;
+                    return [2 /*return*/, res.status(200).json(tokens)];
+                case 3:
+                    e_1 = _a.sent();
+                    console.log(e_1);
+                    return [2 /*return*/, res.status(500).json({ error: "Could not fetch token" })];
+                case 4: return [2 /*return*/];
             }
         });
     });
 }
+exports.default = bffAuthHandler;

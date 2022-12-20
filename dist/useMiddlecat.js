@@ -8,12 +8,14 @@ var util_1 = require("./util");
 var middlecatOauth_1 = require("./middlecatOauth");
 var createMiddlecatUser_1 = require("./createMiddlecatUser");
 var authFormGenerator_1 = __importDefault(require("./authFormGenerator"));
-var selfRefreshingAxios_1 = require("./selfRefreshingAxios");
+var middlecatOauth_2 = require("./middlecatOauth");
 function useMiddlecat(_a) {
-    var _b = _a === void 0 ? {} : _a, fixedResource = _b.fixedResource, _c = _b.autoReconnect, autoReconnect = _c === void 0 ? true : _c, _d = _b.storeToken, storeToken = _d === void 0 ? false : _d;
-    var _e = (0, react_1.useState)(), user = _e[0], setUser = _e[1];
+    var _b = _a === void 0 ? {} : _a, fixedResource = _b.fixedResource, _c = _b.autoReconnect, autoReconnect = _c === void 0 ? true : _c, _d = _b.storeToken, storeToken = _d === void 0 ? false : _d, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+    _e = _b.bff, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+    bff = _e === void 0 ? undefined : _e;
+    var _f = (0, react_1.useState)(), user = _f[0], setUser = _f[1];
     var runOnce = (0, react_1.useRef)(true);
-    var _f = (0, react_1.useState)(true), loading = _f[0], setLoading = _f[1];
+    var _g = (0, react_1.useState)(true), loading = _g[0], setLoading = _g[1];
     var signIn = (0, react_1.useCallback)(function (resource) {
         // action 1. Redirects to middlecat, which will redirect back with code and state
         // parameters. This triggers the authorizationCode flow.
@@ -70,18 +72,17 @@ function useMiddlecat(_a) {
         // (the inFlow shouldn't be needed since we remove the URL parameters, but this somehow
         //  doesn't work when useMiddlecat is imported in nextJS. so this is just to be sure)
         if (inFlow && code && state) {
-            connectWithAuthGrant(resource, code, state, storeToken, setUser, setLoading);
+            connectWithAuthGrant(resource, code, state, storeToken, bff, setUser, setLoading);
             return;
         }
         // If autoReconnect and storeToken are used, reconnect with the stored refresh token
-        if (autoReconnect && storeToken) {
-            connectWithRefresh(resource, storeToken, setUser, setLoading);
+        if (autoReconnect && (storeToken || bff)) {
+            connectWithRefresh(resource, storeToken, bff, setUser, setLoading);
             return;
         }
         // If autoReconnect is used without storeToken, redirect to middlecat
-        if (autoReconnect)
-            signIn(resource);
-    }, [autoReconnect, storeToken, signIn]);
+        //if (autoReconnect) signIn(resource);
+    }, [autoReconnect, storeToken, signIn, bff]);
     var AuthForm = (0, react_1.useMemo)(function () {
         return (0, authFormGenerator_1.default)({
             fixedResource: fixedResource || "",
@@ -94,11 +95,11 @@ function useMiddlecat(_a) {
     return { user: user, AuthForm: AuthForm, loading: loading, signIn: signIn, signOut: signOut };
 }
 exports.default = useMiddlecat;
-function connectWithAuthGrant(resource, code, state, storeToken, setUser, setLoading) {
-    (0, middlecatOauth_1.authorizationCode)(resource, code, state)
+function connectWithAuthGrant(resource, code, state, storeToken, bff, setUser, setLoading) {
+    (0, middlecatOauth_1.authorizationCode)(resource, code, state, bff)
         .then(function (_a) {
         var access_token = _a.access_token, refresh_token = _a.refresh_token;
-        var user = (0, createMiddlecatUser_1.createMiddlecatUser)(access_token, refresh_token, storeToken, setUser);
+        var user = (0, createMiddlecatUser_1.createMiddlecatUser)(access_token, refresh_token, storeToken, bff, setUser);
         localStorage.setItem("resource", resource);
         setUser(user);
     })
@@ -109,13 +110,13 @@ function connectWithAuthGrant(resource, code, state, storeToken, setUser, setLoa
         setLoading(false);
     });
 }
-function connectWithRefresh(resource, storeToken, setUser, setLoading) {
+function connectWithRefresh(resource, storeToken, bff, setUser, setLoading) {
     var middlecat = localStorage.getItem(resource + "_middlecat") || "";
-    var refresh_token = localStorage.getItem(resource + "_refresh") || "";
-    (0, selfRefreshingAxios_1.refreshToken)(middlecat, refresh_token)
+    var refresh_token = storeToken && !bff ? localStorage.getItem(resource + "_refresh") : null;
+    (0, middlecatOauth_2.refreshToken)(middlecat, refresh_token || "", resource, bff)
         .then(function (_a) {
         var access_token = _a.access_token, refresh_token = _a.refresh_token;
-        var user = (0, createMiddlecatUser_1.createMiddlecatUser)(access_token, refresh_token, storeToken, setUser);
+        var user = (0, createMiddlecatUser_1.createMiddlecatUser)(access_token, refresh_token, storeToken, bff, setUser);
         localStorage.setItem("resource", resource);
         setUser(user);
     })
