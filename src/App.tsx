@@ -3,7 +3,7 @@ import "./App.css";
 import useMiddlecat from "./lib/useMiddlecat";
 
 function App() {
-  const { user, AuthForm } = useMiddlecat({ storeToken: true });
+  const { user, AuthForm } = useMiddlecat();
   const [msg, setMsg] = useState("");
 
   useEffect(() => {

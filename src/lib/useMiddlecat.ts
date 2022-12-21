@@ -52,12 +52,14 @@ interface useMiddlecatOut {
   signOut: (signOutMiddlecat: boolean) => void;
 }
 
-export default function useMiddlecat({
-  fixedResource,
-  autoReconnect = true,
-  storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
-  bff = undefined,
-}: useMiddlecatParams = {}): useMiddlecatOut {
+export default function useMiddlecat(
+  {
+    fixedResource,
+    autoReconnect = true,
+    storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+    bff = undefined,
+  }: useMiddlecatParams = { autoReconnect: true, storeToken: false }
+): useMiddlecatOut {
   const [user, setUser] = useState<MiddlecatUser>();
   const runOnce = useRef(true);
   const [loading, setLoading] = useState(true);
@@ -145,7 +147,10 @@ export default function useMiddlecat({
     }
 
     // If autoReconnect is used without storeToken, redirect to middlecat
+    // (currently disabled, because not sure about user experience)
     //if (autoReconnect) signIn(resource);
+
+    setLoading(false);
   }, [autoReconnect, storeToken, signIn, bff]);
 
   const AuthForm = useMemo(() => {

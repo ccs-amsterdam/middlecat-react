@@ -15,10 +15,11 @@ const AuthContainer = styled.div<LayoutProps>`
   text-align: center;
   flex-direction: column;
   position: relative;
+  font-size: 1.8em;
 
   & .InnerContainer {
     box-sizing: border-box;
-    font-size: 1.8rem;
+    font-size: 1.2em;
     margin: auto;
     width: 100%;
     max-width: 400px;
@@ -45,7 +46,7 @@ const AuthContainer = styled.div<LayoutProps>`
     border: 2px solid var(--primary);
     font-size: inherit;
     max-width: 400px;
-    padding: 1rem 2rem;
+    padding: 0.6rem 1.5rem;
     border-radius: 10px;
     cursor: pointer;
     transition: background 0.3s;
@@ -56,7 +57,7 @@ const AuthContainer = styled.div<LayoutProps>`
     }
   }
   & input {
-    margin: 1.5rem 0rem;
+    margin: 1rem 0rem;
     width: 100%;
     border-radius: 5px;
     height: 40px;
@@ -66,7 +67,7 @@ const AuthContainer = styled.div<LayoutProps>`
   .SignOut {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.5rem;
   }
 
   & .Loader {
@@ -242,7 +243,7 @@ function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
           {user?.name ? (
             <>
               <br />
-              <span style={{ fontSize: "1.2rem" }}>{user?.email}</span>
+              <span style={{ fontSize: "0.8em" }}>{user?.email}</span>
             </>
           ) : null}
         </div>
