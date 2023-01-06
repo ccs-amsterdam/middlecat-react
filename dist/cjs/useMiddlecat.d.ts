@@ -20,7 +20,6 @@ import { MiddlecatUser } from "./types";
  * @returns
  */
 interface useMiddlecatParams {
-    fixedResource?: string;
     autoReconnect?: boolean;
     storeToken?: boolean;
     bff?: string | undefined;
@@ -32,6 +31,6 @@ interface useMiddlecatOut {
     signIn: (resource?: string) => void;
     signOut: (signOutMiddlecat: boolean) => void;
 }
-export default function useMiddlecat({ fixedResource, autoReconnect, storeToken, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+export default function useMiddlecat({ autoReconnect, storeToken, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
 bff, }?: useMiddlecatParams): useMiddlecatOut;
 export {};

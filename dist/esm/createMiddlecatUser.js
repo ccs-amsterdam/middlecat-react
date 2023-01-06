@@ -45,7 +45,7 @@ import selfRefreshingAxios from "./selfRefreshingAxios";
  * @param setUser        includes setUser so that it can set state to undefined if refresh fails or session is killed
  * @returns
  */
-export function createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUser) {
+export function createMiddlecatUser(access_token, refresh_token, storeToken, bff, resource, setUser) {
     var _this = this;
     if (!access_token)
         return undefined;
@@ -61,6 +61,7 @@ export function createMiddlecatUser(access_token, refresh_token, storeToken, bff
         name: payload.name,
         image: payload.image,
         api: api,
+        resource: resource || "",
         killSession: killSession,
     };
 }

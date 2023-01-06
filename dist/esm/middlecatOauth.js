@@ -65,7 +65,7 @@ export function authorize(resource) {
                     localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
                     localStorage.setItem(resource + "_state", state);
                     localStorage.setItem(resource + "_middlecat", middlecat_url);
-                    return [2 /*return*/, "".concat(middlecat_url, "/authorize?client_id=").concat(clientId, "&state=").concat(state, "&redirect_uri=").concat(redirect_uri, "&resource=").concat(resource, "&code_challenge=").concat(pkce.code_challenge)];
+                    return [2 /*return*/, "".concat(middlecat_url, "/authorize?client_id=").concat(clientId, "&state=").concat(state, "&redirect_uri=").concat(encodeURIComponent(redirect_uri), "&resource=").concat(resource, "&code_challenge=").concat(pkce.code_challenge)];
             }
         });
     });

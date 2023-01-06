@@ -1,7 +1,6 @@
 /// <reference types="react" />
 import { MiddlecatUser } from "./types";
 interface Props {
-    fixedResource: string;
     user: MiddlecatUser | undefined;
     loading: boolean;
     signIn: (resource?: string) => void;
@@ -13,6 +12,7 @@ interface AuthFormProps {
     resourceLabel?: string;
     resourceExample?: string;
     resourceSuggestion?: string;
+    resourceFixed?: string;
     signInLabel?: string;
     signOutLabel?: string;
 }
@@ -22,5 +22,5 @@ interface AuthFormProps {
  * the only props that need to be specified for
  * the auth form are the AuthFormProps
  */
-export default function authFormGenerator({ fixedResource, user, loading, signIn, signOut, }: Props): import("react").MemoExoticComponent<({ primary, secondary, resourceLabel, resourceExample, resourceSuggestion, signInLabel, signOutLabel, }: AuthFormProps) => JSX.Element>;
+export default function authFormGenerator({ user, loading, signIn, signOut, }: Props): import("react").MemoExoticComponent<({ primary, secondary, resourceLabel, resourceExample, resourceSuggestion, resourceFixed, signInLabel, signOutLabel, }: AuthFormProps) => JSX.Element>;
 export {};

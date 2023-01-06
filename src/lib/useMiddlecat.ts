@@ -38,7 +38,6 @@ import { refreshToken } from "./middlecatOauth";
  */
 
 interface useMiddlecatParams {
-  fixedResource?: string;
   autoReconnect?: boolean;
   storeToken?: boolean;
   bff?: string | undefined;
@@ -54,7 +53,6 @@ interface useMiddlecatOut {
 
 export default function useMiddlecat(
   {
-    fixedResource,
     autoReconnect = true,
     storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
     bff = undefined,
@@ -64,25 +62,22 @@ export default function useMiddlecat(
   const runOnce = useRef(true);
   const [loading, setLoading] = useState(true);
 
-  const signIn = useCallback(
-    (resource?: string) => {
-      // action 1. Redirects to middlecat, which will redirect back with code and state
-      // parameters. This triggers the authorizationCode flow.
-      setLoading(true);
-      let r = safeURL(fixedResource || resource || "");
-      authorize(r)
-        .then((middlecat_redirect) => {
-          localStorage.setItem("resource", r);
-          localStorage.setItem("awaiting_oauth_redirect", "true");
-          window.location.href = middlecat_redirect;
-        })
-        .catch((e) => {
-          console.error(e);
-          setLoading(false);
-        });
-    },
-    [fixedResource]
-  );
+  const signIn = useCallback((resource?: string) => {
+    // action 1. Redirects to middlecat, which will redirect back with code and state
+    // parameters. This triggers the authorizationCode flow.
+    setLoading(true);
+    let r = safeURL(resource || "");
+    authorize(r)
+      .then((middlecat_redirect) => {
+        localStorage.setItem("resource", r);
+        localStorage.setItem("awaiting_oauth_redirect", "true");
+        window.location.href = middlecat_redirect;
+      })
+      .catch((e) => {
+        console.error(e);
+        setLoading(false);
+      });
+  }, []);
 
   const signOut = useCallback(
     (signOutMiddlecat: boolean = false) => {
@@ -155,13 +150,12 @@ export default function useMiddlecat(
 
   const AuthForm = useMemo(() => {
     return authFormGenerator({
-      fixedResource: fixedResource || "",
       user,
       loading,
       signIn,
       signOut,
     });
-  }, [fixedResource, user, loading, signIn, signOut]);
+  }, [user, loading, signIn, signOut]);
 
   return { user, AuthForm, loading, signIn, signOut };
 }
@@ -182,6 +176,7 @@ function connectWithAuthGrant(
         refresh_token,
         storeToken,
         bff,
+        resource,
         setUser
       );
       localStorage.setItem("resource", resource);
@@ -213,6 +208,7 @@ function connectWithRefresh(
         refresh_token,
         storeToken,
         bff,
+        resource || "",
         setUser
       );
       localStorage.setItem("resource", resource);

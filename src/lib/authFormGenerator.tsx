@@ -8,8 +8,8 @@ interface LayoutProps {
 }
 
 const AuthContainer = styled.div<LayoutProps>`
-  --primary: ${(p) => p.color || "#38c7b9"};
-  --secondary: ${(p) => p.color || "#1d7269"};
+  --primary: ${(p) => p.primary || "#38c7b9"};
+  --secondary: ${(p) => p.secondary || "#1d7269"};
   color: var(--secondary);
   display: flex;
   text-align: center;
@@ -91,7 +91,6 @@ const AuthContainer = styled.div<LayoutProps>`
 `;
 
 interface Props {
-  fixedResource: string;
   user: MiddlecatUser | undefined;
   loading: boolean;
   signIn: (resource?: string) => void;
@@ -104,6 +103,7 @@ interface AuthFormProps {
   resourceLabel?: string;
   resourceExample?: string;
   resourceSuggestion?: string;
+  resourceFixed?: string;
   signInLabel?: string;
   signOutLabel?: string;
 }
@@ -115,7 +115,6 @@ interface AuthFormProps {
  * the auth form are the AuthFormProps
  */
 export default function authFormGenerator({
-  fixedResource,
   user,
   loading,
   signIn,
@@ -127,6 +126,7 @@ export default function authFormGenerator({
     resourceLabel,
     resourceExample,
     resourceSuggestion,
+    resourceFixed,
     signInLabel,
     signOutLabel,
   }: AuthFormProps) => {
@@ -135,11 +135,11 @@ export default function authFormGenerator({
       if (!user)
         return (
           <SignInForm
-            fixedResource={fixedResource}
             signIn={signIn}
             resourceLabel={resourceLabel}
             resourceExample={resourceExample}
             resourceSuggestion={resourceSuggestion}
+            resourceFixed={resourceFixed}
             signInLabel={signInLabel}
           />
         );
@@ -165,24 +165,24 @@ export default function authFormGenerator({
 }
 
 interface SignInFormProps {
-  fixedResource: string;
   signIn: (resource?: string) => void;
   resourceLabel?: string;
   resourceExample?: string;
   resourceSuggestion?: string;
+  resourceFixed?: string;
   signInLabel?: string;
 }
 
 function SignInForm({
-  fixedResource,
   signIn,
   resourceLabel,
   resourceExample,
   resourceSuggestion,
+  resourceFixed,
   signInLabel,
 }: SignInFormProps) {
   const [resourceValue, setResourceValue] = useState(
-    fixedResource || resourceSuggestion || ""
+    resourceFixed || resourceSuggestion || ""
   );
   function invalidUrl(url: string) {
     return !/^https?:\/\//.test(url);
@@ -195,22 +195,20 @@ function SignInForm({
         signIn(resourceValue);
       }}
     >
-      {fixedResource ? (
-        <h3>{fixedResource}</h3>
+      <label>
+        <b>{resourceLabel || "Connect to server"}</b>
+      </label>
+      {resourceFixed ? (
+        <p>{resourceFixed}</p>
       ) : (
-        <>
-          <label>
-            <b>{resourceLabel || "Connect to server"}</b>
-          </label>
-          <input
-            type="url"
-            id="url"
-            name="url"
-            placeholder={resourceExample || "https://amcat-server.example"}
-            value={resourceValue}
-            onChange={(e) => setResourceValue(e.target.value)}
-          />
-        </>
+        <input
+          type="url"
+          id="url"
+          name="url"
+          placeholder={resourceExample || "https://amcat-server.example"}
+          value={resourceValue}
+          onChange={(e) => setResourceValue(e.target.value)}
+        />
       )}
 
       <button disabled={invalidUrl(resourceValue)} type="submit">

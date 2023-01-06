@@ -30,7 +30,9 @@ export async function authorize(resource: string) {
   localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
   localStorage.setItem(resource + "_state", state);
   localStorage.setItem(resource + "_middlecat", middlecat_url);
-  return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${redirect_uri}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
+  return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${encodeURIComponent(
+    redirect_uri
+  )}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
 }
 
 export async function authorizationCode(

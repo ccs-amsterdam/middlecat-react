@@ -8,6 +8,8 @@ export interface MiddlecatUser {
     image: string;
     /** Axios instance to make API calls */
     api: Axios;
+    /** resource url */
+    resource: string;
     /** Kill the AmCAT session and optionally also the MiddleCat session. Used internally on signout */
     killSession: (signOutMiddlecat: boolean) => Promise<void>;
 }

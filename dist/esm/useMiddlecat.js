@@ -5,7 +5,7 @@ import { createMiddlecatUser } from "./createMiddlecatUser";
 import authFormGenerator from "./authFormGenerator";
 import { refreshToken } from "./middlecatOauth";
 export default function useMiddlecat(_a) {
-    var _b = _a === void 0 ? { autoReconnect: true, storeToken: false } : _a, fixedResource = _b.fixedResource, _c = _b.autoReconnect, autoReconnect = _c === void 0 ? true : _c, _d = _b.storeToken, storeToken = _d === void 0 ? false : _d, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
+    var _b = _a === void 0 ? { autoReconnect: true, storeToken: false } : _a, _c = _b.autoReconnect, autoReconnect = _c === void 0 ? true : _c, _d = _b.storeToken, storeToken = _d === void 0 ? false : _d, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
     _e = _b.bff, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
     bff = _e === void 0 ? undefined : _e;
     var _f = useState(), user = _f[0], setUser = _f[1];
@@ -15,7 +15,7 @@ export default function useMiddlecat(_a) {
         // action 1. Redirects to middlecat, which will redirect back with code and state
         // parameters. This triggers the authorizationCode flow.
         setLoading(true);
-        var r = safeURL(fixedResource || resource || "");
+        var r = safeURL(resource || "");
         authorize(r)
             .then(function (middlecat_redirect) {
             localStorage.setItem("resource", r);
@@ -26,7 +26,7 @@ export default function useMiddlecat(_a) {
             console.error(e);
             setLoading(false);
         });
-    }, [fixedResource]);
+    }, []);
     var signOut = useCallback(function (signOutMiddlecat) {
         if (signOutMiddlecat === void 0) { signOutMiddlecat = false; }
         setLoading(true);
@@ -82,20 +82,19 @@ export default function useMiddlecat(_a) {
     }, [autoReconnect, storeToken, signIn, bff]);
     var AuthForm = useMemo(function () {
         return authFormGenerator({
-            fixedResource: fixedResource || "",
             user: user,
             loading: loading,
             signIn: signIn,
             signOut: signOut,
         });
-    }, [fixedResource, user, loading, signIn, signOut]);
+    }, [user, loading, signIn, signOut]);
     return { user: user, AuthForm: AuthForm, loading: loading, signIn: signIn, signOut: signOut };
 }
 function connectWithAuthGrant(resource, code, state, storeToken, bff, setUser, setLoading) {
     authorizationCode(resource, code, state, bff)
         .then(function (_a) {
         var access_token = _a.access_token, refresh_token = _a.refresh_token;
-        var user = createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUser);
+        var user = createMiddlecatUser(access_token, refresh_token, storeToken, bff, resource, setUser);
         localStorage.setItem("resource", resource);
         setUser(user);
     })
@@ -112,7 +111,7 @@ function connectWithRefresh(resource, storeToken, bff, setUser, setLoading) {
     refreshToken(middlecat, refresh_token || "", resource, bff)
         .then(function (_a) {
         var access_token = _a.access_token, refresh_token = _a.refresh_token;
-        var user = createMiddlecatUser(access_token, refresh_token, storeToken, bff, setUser);
+        var user = createMiddlecatUser(access_token, refresh_token, storeToken, bff, resource || "", setUser);
         localStorage.setItem("resource", resource);
         setUser(user);
     })

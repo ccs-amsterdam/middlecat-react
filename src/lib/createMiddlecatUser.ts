@@ -17,6 +17,7 @@ export function createMiddlecatUser(
   refresh_token: string,
   storeToken: boolean,
   bff: string | undefined,
+  resource: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
 ): MiddlecatUser | undefined {
   if (!access_token) return undefined;
@@ -45,6 +46,7 @@ export function createMiddlecatUser(
     name: payload.name,
     image: payload.image,
     api,
+    resource: resource || "",
     killSession,
   };
 }
