@@ -61,10 +61,12 @@ export default function useMiddlecat(
   const [user, setUser] = useState<MiddlecatUser>();
   const runOnce = useRef(true);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const signIn = useCallback((resource?: string) => {
     // action 1. Redirects to middlecat, which will redirect back with code and state
     // parameters. This triggers the authorizationCode flow.
+    setError("");
     setLoading(true);
     let r = safeURL(resource || "");
     authorize(r)
@@ -74,6 +76,12 @@ export default function useMiddlecat(
         window.location.href = middlecat_redirect;
       })
       .catch((e) => {
+        setError(
+          e.message.includes("timeout")
+            ? "Timeout exceeded"
+            : "Could not connect to server"
+        );
+        setTimeout(() => setError(""), 3000);
         console.error(e);
         setLoading(false);
       });
@@ -152,10 +160,11 @@ export default function useMiddlecat(
     return authFormGenerator({
       user,
       loading,
+      error,
       signIn,
       signOut,
     });
-  }, [user, loading, signIn, signOut]);
+  }, [user, loading, error, signIn, signOut]);
 
   return { user, AuthForm, loading, signIn, signOut };
 }

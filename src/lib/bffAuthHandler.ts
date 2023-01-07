@@ -21,7 +21,8 @@ export default async function bffAuthHandler(
   req: any,
   res: any,
   cookies: any,
-  maxAge: number = 60 * 60 * 24 * 30 * 1000 // 30 days
+  maxAge: number = 60 * 60 * 24 * 30 * 1000, // 30 days
+  secure: boolean = false
 ) {
   try {
     // base64 encode resource and middlecat_url so it can be used in cookie name.
@@ -52,7 +53,8 @@ export default async function bffAuthHandler(
     const tokens = await tokens_res.json();
 
     cookies.set(refreshCookie, tokens.refresh_token, {
-      secure: process.env.NODE_ENV !== "development",
+      secure, // need to verify whether this is the reason it doesn't work on netlify
+      //secure: process.env.NODE_ENV !== "development",
       httpOnly: true,
       sameSite: "strict",
       maxAge,
@@ -62,8 +64,8 @@ export default async function bffAuthHandler(
     tokens.refresh_token = null;
 
     return res.status(200).json(tokens);
-  } catch (e) {
+  } catch (e: any) {
     console.log(e);
-    return res.status(500).json({ error: "Could not fetch token" });
+    return res.status(500).json({ error: e.message });
   }
 }

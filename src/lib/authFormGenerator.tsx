@@ -17,7 +17,7 @@ const AuthContainer = styled.div<LayoutProps>`
   position: relative;
   font-size: 1.8em;
 
-  & .InnerContainer {
+  .InnerContainer {
     box-sizing: border-box;
     font-size: 1.2em;
     margin: auto;
@@ -26,21 +26,21 @@ const AuthContainer = styled.div<LayoutProps>`
     text-align: center;
   }
 
-  & .User {
+  .User {
     display: flex;
     justify-content: center;
     align-items: center;
     font-weight: 800;
   }
 
-  & .Image {
+  .Image {
     height: 45px;
     width: 45px;
     border-radius: 50%;
     margin-right: 1rem;
     border: 1px solid var(--secondary);
   }
-  & button {
+  button {
     width: 100%;
     background: white;
     border: 2px solid var(--primary);
@@ -56,7 +56,7 @@ const AuthContainer = styled.div<LayoutProps>`
       background: var(--primary);
     }
   }
-  & input {
+  input {
     margin: 1rem 0rem;
     width: 100%;
     border-radius: 5px;
@@ -70,7 +70,7 @@ const AuthContainer = styled.div<LayoutProps>`
     gap: 0.5rem;
   }
 
-  & .Loader {
+  .Loader {
     margin: auto;
     border: 10px solid #f3f3f3;
     border-top: 10px solid #3498db;
@@ -78,6 +78,12 @@ const AuthContainer = styled.div<LayoutProps>`
     width: 80px;
     height: 80px;
     animation: spin 1s linear infinite;
+  }
+
+  p {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    height: 3rem;
   }
 
   @keyframes spin {
@@ -93,6 +99,7 @@ const AuthContainer = styled.div<LayoutProps>`
 interface Props {
   user: MiddlecatUser | undefined;
   loading: boolean;
+  error: string;
   signIn: (resource?: string) => void;
   signOut: () => void;
 }
@@ -117,6 +124,7 @@ interface AuthFormProps {
 export default function authFormGenerator({
   user,
   loading,
+  error,
   signIn,
   signOut,
 }: Props) {
@@ -157,6 +165,7 @@ export default function authFormGenerator({
         <div className="InnerContainer">
           <ConditionalRender />
         </div>
+        {user ? null : <p>{error}</p>}
       </AuthContainer>
     );
   };
@@ -182,7 +191,10 @@ function SignInForm({
   signInLabel,
 }: SignInFormProps) {
   const [resourceValue, setResourceValue] = useState(
-    resourceFixed || resourceSuggestion || ""
+    sessionStorage.getItem("AuthformResource") ||
+      resourceFixed ||
+      resourceSuggestion ||
+      ""
   );
   function invalidUrl(url: string) {
     return !/^https?:\/\//.test(url);
@@ -207,7 +219,10 @@ function SignInForm({
           name="url"
           placeholder={resourceExample || "https://amcat-server.example"}
           value={resourceValue}
-          onChange={(e) => setResourceValue(e.target.value)}
+          onChange={(e) => {
+            sessionStorage.setItem("AuthformResource", e.target.value);
+            setResourceValue(e.target.value);
+          }}
         />
       )}
 

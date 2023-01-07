@@ -1,3 +1,4 @@
+import axios from "axios";
 import pkceChallenge from "pkce-challenge";
 import { Dispatch, SetStateAction } from "react";
 import { MiddlecatUser } from "./types";
@@ -19,8 +20,10 @@ export async function authorize(resource: string) {
   const clientURL = new URL(redirect_uri);
   const clientId = clientURL.host;
 
-  const res = await fetch(`${safeURL(resource)}/middlecat`);
-  let { middlecat_url } = await res.json();
+  const res = await axios.get(`${safeURL(resource)}/middlecat`, {
+    timeout: 5000,
+  });
+  let { middlecat_url } = res.data;
   middlecat_url = safeURL(middlecat_url);
   if (res.status !== 200 || !middlecat_url)
     throw new Error("Could not get MiddleCat URL from resource");
@@ -63,21 +66,14 @@ export async function authorizationCode(
     url = bff;
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const res = await axios.post(url, body);
 
   // cleanup. Not strictly needed because they have now lost
   // their power, but still feels nice
   localStorage.removeItem(resource + "_code_verifier");
   localStorage.removeItem(resource + "_state");
 
-  return await res.json();
+  return res.data;
 }
 
 export async function refreshToken(
@@ -98,16 +94,8 @@ export async function refreshToken(
     url = bff;
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  return await res.json();
+  const res = await axios.post(url, body);
+  return res.data;
 }
 
 /**
@@ -136,13 +124,6 @@ export async function killMiddlecatSession(
     url = bff;
   }
 
-  await fetch(url, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  await axios.post(url, body);
   setUser(undefined);
 }
