@@ -68,6 +68,10 @@ export async function authorizationCode(
 
   const res = await axios.post(url, body);
 
+  if (bff) {
+    localStorage.setItem(resource + "_refresh_id", res.data.refresh_id);
+  }
+
   // cleanup. Not strictly needed because they have now lost
   // their power, but still feels nice
   localStorage.removeItem(resource + "_code_verifier");
@@ -89,19 +93,26 @@ export async function refreshToken(
 
   let url = `${middlecat}/api/token`;
   if (bff) {
+    body.refresh_id = localStorage.getItem(resource + "_refresh_id");
     body.middlecat_url = url;
     body.resource = resource;
     url = bff;
   }
 
   const res = await axios.post(url, body);
+
+  if (bff) {
+    localStorage.setItem(resource + "_refresh_id", res.data.refresh_id);
+  }
+
   return res.data;
 }
 
 /**
  * Not really part of the oauth flow, but included it in the /token
- * endpoint as a grant_type because it has many similarities. Basically,
- * we use a refresh token (even an expired one) to kill a middlecat session.
+ * endpoint as a grant_type because it has many similarities. If one has
+ * the refresh token, they are allowed to kill a session, meaning that
+ * all refresh tokens for this session stop working.
  */
 export async function killMiddlecatSession(
   middlecat: string | null,
@@ -119,6 +130,7 @@ export async function killMiddlecatSession(
 
   let url = `${middlecat}/api/token`;
   if (bff) {
+    body.refresh_id = localStorage.getItem(resource + "_refresh_id");
     body.middlecat_url = url;
     body.resource = resource;
     url = bff;
