@@ -79,7 +79,7 @@ async function getTokens(
 
   const now = Date.now() / 1000;
   const nearfuture = now + 10; // refresh x seconds before expires
-  if (payload.exp < nearfuture) {
+  if (payload.exp != null && payload.exp < nearfuture) {
     return await refreshToken(payload.middlecat, refresh_token, resource, bff);
   } else {
     return { access_token, refresh_token };

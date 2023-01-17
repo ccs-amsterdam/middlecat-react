@@ -1,6 +1,8 @@
 import { memo, useState } from "react";
 import styled from "styled-components";
+import axios from "axios";
 import { MiddlecatUser } from "./types";
+import { safeURL } from "./util";
 
 interface LayoutProps {
   primary?: string;
@@ -56,6 +58,7 @@ const AuthContainer = styled.div<LayoutProps>`
       background: var(--primary);
     }
   }
+
   input {
     margin: 1rem 0rem;
     width: 100%;
@@ -68,6 +71,7 @@ const AuthContainer = styled.div<LayoutProps>`
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    margin-top: 1rem;
   }
 
   .Loader {
@@ -86,6 +90,30 @@ const AuthContainer = styled.div<LayoutProps>`
     height: 3rem;
   }
 
+  .Divider {
+    display: flex;
+    position: relative;
+    margin: 2rem 10px;
+    z-index: 2;
+  }
+
+  .Divider div {
+    margin: auto;
+    background: white;
+    z-index: 2;
+    padding: 0rem 1rem;
+  }
+
+  .Divider::after {
+    content: "";
+    position: absolute;
+    bottom: 1rem;
+    left: 0;
+    width: 100%;
+    z-index: 1;
+    border-bottom: 2px solid;
+  }
+
   @keyframes spin {
     0% {
       transform: rotate(0deg);
@@ -100,7 +128,8 @@ interface Props {
   user: MiddlecatUser | undefined;
   loading: boolean;
   error: string;
-  signIn: (resource?: string) => void;
+  signIn: (resource: string, middlecat_url?: string) => void;
+  signInGuest: (resource: string, name: string, guestLoginId?: string) => void;
   signOut: () => void;
 }
 
@@ -126,6 +155,7 @@ export default function authFormGenerator({
   loading,
   error,
   signIn,
+  signInGuest,
   signOut,
 }: Props) {
   const AuthForm = ({
@@ -144,6 +174,7 @@ export default function authFormGenerator({
         return (
           <SignInForm
             signIn={signIn}
+            signInGuest={signInGuest}
             resourceLabel={resourceLabel}
             resourceExample={resourceExample}
             resourceSuggestion={resourceSuggestion}
@@ -174,7 +205,8 @@ export default function authFormGenerator({
 }
 
 interface SignInFormProps {
-  signIn: (resource?: string) => void;
+  signIn: (resource: string, middlecat_url?: string) => void;
+  signInGuest: (resource: string, name: string, guestLoginId?: string) => void;
   resourceLabel?: string;
   resourceExample?: string;
   resourceSuggestion?: string;
@@ -182,8 +214,15 @@ interface SignInFormProps {
   signInLabel?: string;
 }
 
+interface ResourceConfig {
+  resource: string;
+  require_auth: boolean;
+  middlecat_url: string;
+}
+
 function SignInForm({
   signIn,
+  signInGuest,
   resourceLabel,
   resourceExample,
   resourceSuggestion,
@@ -196,17 +235,63 @@ function SignInForm({
       resourceSuggestion ||
       ""
   );
+  const [guestName, setGuestName] = useState("");
+  const [config, setConfig] = useState<ResourceConfig>();
+  const [error, setError] = useState(false);
+
+  async function onSubmit(e: any) {
+    e.preventDefault();
+    const res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
+      timeout: 5000,
+    });
+    if (res.status !== 200) {
+      setError(true);
+      return;
+    }
+
+    const middlecat_url = res.data.middlecat_url || "";
+    const require_auth = !!res.data.require_auth;
+    setConfig({ resource: resourceValue, middlecat_url, require_auth });
+  }
+
   function invalidUrl(url: string) {
     return !/^https?:\/\//.test(url);
   }
 
+  if (config)
+    return (
+      <form>
+        {config.middlecat_url ? (
+          <>
+            <button
+              onClick={() => signIn(config.resource, config.middlecat_url)}
+            >
+              Sign-in as user
+            </button>
+          </>
+        ) : null}
+        <div className="Divider">
+          <div>OR</div>
+        </div>
+        <input
+          type="name"
+          id="name"
+          name="name"
+          placeholder={"username (optional)"}
+          value={guestName}
+          style={{ textAlign: "center" }}
+          onChange={(e) => {
+            setGuestName(e.target.value);
+          }}
+        />
+        <button onClick={() => signInGuest(config.resource, guestName)}>
+          Visit as guest
+        </button>
+      </form>
+    );
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        signIn(resourceValue);
-      }}
-    >
+    <form onSubmit={onSubmit}>
       <label>
         <b>{resourceLabel || "Connect to server"}</b>
       </label>
@@ -220,6 +305,7 @@ function SignInForm({
           placeholder={resourceExample || "https://amcat-server.example"}
           value={resourceValue}
           onChange={(e) => {
+            if (error) setError(false);
             sessionStorage.setItem("AuthformResource", e.target.value);
             setResourceValue(e.target.value);
           }}
@@ -229,6 +315,7 @@ function SignInForm({
       <button disabled={invalidUrl(resourceValue)} type="submit">
         {signInLabel || "Sign-in"}
       </button>
+      {error && <p>Could not connect to server</p>}
     </form>
   );
 }
@@ -256,12 +343,14 @@ function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
           {user?.name ? (
             <>
               <br />
-              <span style={{ fontSize: "0.8em" }}>{user?.email}</span>
+              <span style={{ fontSize: "0.8em" }}>
+                {user?.guestSessionId ? "guest user" : user?.email}
+              </span>
             </>
           ) : null}
         </div>
       </div>
-      <br />
+
       <div className="SignOut">
         <button onClick={() => signOut(false)}>
           {signOutLabel || "Sign-out"}

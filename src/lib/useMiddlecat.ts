@@ -13,6 +13,8 @@ import { MiddlecatUser } from "./types";
 import { createMiddlecatUser } from "./createMiddlecatUser";
 import authFormGenerator from "./authFormGenerator";
 import { refreshToken } from "./middlecatOauth";
+import { createGuestUser } from "./createGuesteUser";
+import createGuestToken from "./createGuestToken";
 
 // This hook is to be used in React applications using middlecat
 
@@ -47,7 +49,8 @@ interface useMiddlecatOut {
   user: MiddlecatUser | undefined;
   AuthForm: any;
   loading: boolean;
-  signIn: (resource?: string) => void;
+  signIn: (resource: string) => void;
+  signInGuest: (resource: string, name: string, guestToken?: string) => void;
   signOut: (signOutMiddlecat: boolean) => void;
 }
 
@@ -63,13 +66,13 @@ export default function useMiddlecat(
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const signIn = useCallback((resource?: string) => {
+  const signIn = useCallback((resource: string, middlecat_url?: string) => {
     // action 1. Redirects to middlecat, which will redirect back with code and state
     // parameters. This triggers the authorizationCode flow.
     setError("");
     setLoading(true);
-    let r = safeURL(resource || "");
-    authorize(r)
+    let r = safeURL(resource);
+    authorize(r, middlecat_url)
       .then((middlecat_redirect) => {
         localStorage.setItem("resource", r);
         localStorage.setItem("awaiting_oauth_redirect", "true");
@@ -87,9 +90,23 @@ export default function useMiddlecat(
       });
   }, []);
 
+  const signInGuest = useCallback(
+    (resource: string, name: string, guestLoginId?: string) => {
+      let r = safeURL(resource);
+      const guest_token = createGuestToken(r, name, guestLoginId);
+      localStorage.setItem("resource", r);
+      if (storeToken || bff) localStorage.setItem(r + "_guest", guest_token);
+      const user = createGuestUser(guest_token, setUser);
+      setUser(user);
+    },
+    [bff, storeToken]
+  );
+
   const signOut = useCallback(
     (signOutMiddlecat: boolean = false) => {
       setLoading(true);
+      const resource = localStorage.getItem("resource");
+      localStorage.setItem(resource + "_guest", "");
       localStorage.setItem("resource", "");
       if (!user) return;
       // currently doesn't tell the user if could not kill
@@ -145,7 +162,7 @@ export default function useMiddlecat(
 
     // If autoReconnect and storeToken are used, reconnect with the stored refresh token
     if (autoReconnect && (storeToken || bff)) {
-      connectWithRefresh(resource, storeToken, bff, setUser, setLoading);
+      resumeConnection(resource, storeToken, bff, setUser, setLoading);
       return;
     }
 
@@ -162,11 +179,12 @@ export default function useMiddlecat(
       loading,
       error,
       signIn,
+      signInGuest,
       signOut,
     });
-  }, [user, loading, error, signIn, signOut]);
+  }, [user, loading, error, signIn, signInGuest, signOut]);
 
-  return { user, AuthForm, loading, signIn, signOut };
+  return { user, AuthForm, loading, signIn, signInGuest, signOut };
 }
 
 function connectWithAuthGrant(
@@ -199,7 +217,7 @@ function connectWithAuthGrant(
     });
 }
 
-function connectWithRefresh(
+function resumeConnection(
   resource: string,
   storeToken: boolean,
   bff: string | undefined,
@@ -209,6 +227,15 @@ function connectWithRefresh(
   const middlecat = localStorage.getItem(resource + "_middlecat") || "";
   const refresh_token =
     storeToken && !bff ? localStorage.getItem(resource + "_refresh") : null;
+  const guest_token: string = localStorage.getItem(resource + "_guest") || "";
+
+  console.log("test");
+  if (guest_token) {
+    console.log(guest_token);
+    setUser(createGuestUser(guest_token, setUser));
+    setLoading(false);
+    return null;
+  }
 
   refreshToken(middlecat, refresh_token || "", resource, bff)
     .then(({ access_token, refresh_token }) => {

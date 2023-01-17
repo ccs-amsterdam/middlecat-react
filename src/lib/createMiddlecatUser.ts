@@ -42,11 +42,12 @@ export function createMiddlecatUser(
     );
 
   return {
-    email: payload.email,
-    name: payload.name,
-    image: payload.image,
+    email: payload.email || "",
+    name: payload.name || "",
+    image: payload.image || "",
     api,
     resource: resource || "",
+    guestSessionId: "",
     killSession,
   };
 }

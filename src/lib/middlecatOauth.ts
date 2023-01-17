@@ -5,7 +5,7 @@ import { MiddlecatUser } from "./types";
 
 import { safeURL } from "./util";
 
-export async function authorize(resource: string) {
+export async function authorize(resource: string, middlecat_url?: string) {
   // we makes sure that the redirect url doesn't contain parameters from a previous oauth flow.
   // ideally these parameters are deleted after the flow, but somehow this doesn't always work (especially in nextJS).
   const redirectURL = new URL(window.location.href);
@@ -20,19 +20,20 @@ export async function authorize(resource: string) {
   const clientURL = new URL(redirect_uri);
   const clientId = clientURL.host;
 
-  const res = await axios.get(`${safeURL(resource)}/middlecat`, {
-    timeout: 5000,
-  });
-  let { middlecat_url } = res.data;
-  middlecat_url = safeURL(middlecat_url);
-  if (res.status !== 200 || !middlecat_url)
-    throw new Error("Could not get MiddleCat URL from resource");
+  if (!middlecat_url) {
+    const res = await axios.get(`${safeURL(resource)}/middlecat`, {
+      timeout: 5000,
+    });
+    if (res.status !== 200 || !res.data.middlecat_url)
+      throw new Error("Could not get MiddleCat URL from resource");
+    middlecat_url = res.data.middlecat_url;
+  }
 
   // need to remember code_verifier and state, and this needs to work across
   // sessions because auth with magic links continues in new window.
   localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
   localStorage.setItem(resource + "_state", state);
-  localStorage.setItem(resource + "_middlecat", middlecat_url);
+  localStorage.setItem(resource + "_middlecat", middlecat_url || "");
   return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${encodeURIComponent(
     redirect_uri
   )}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
