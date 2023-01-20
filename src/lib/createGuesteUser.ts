@@ -31,6 +31,5 @@ export function createGuestUser(
     api,
     resource: resource || "",
     killSession,
-    authDisabled,
   };
 }

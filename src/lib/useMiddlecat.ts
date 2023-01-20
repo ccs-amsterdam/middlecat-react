@@ -70,8 +70,8 @@ export default function useMiddlecat(
     // action 1. Redirects to middlecat, which will redirect back with code and state
     // parameters. This triggers the authorizationCode flow.
     setError("");
-    setLoading(true);
     let r = safeURL(resource);
+    setLoading(true);
     authorize(r, middlecat_url)
       .then((middlecat_redirect) => {
         localStorage.setItem("resource", r);

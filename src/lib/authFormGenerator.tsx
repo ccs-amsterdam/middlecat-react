@@ -93,7 +93,7 @@ const AuthContainer = styled.div<LayoutProps>`
   .Divider {
     display: flex;
     position: relative;
-    margin: 2rem 10px;
+    margin: 1rem 10px;
     z-index: 2;
   }
 
@@ -102,6 +102,7 @@ const AuthContainer = styled.div<LayoutProps>`
     background: white;
     z-index: 2;
     padding: 0rem 1rem;
+    font-size: 0.9em;
   }
 
   .Divider::after {
@@ -218,6 +219,7 @@ interface SignInFormProps {
 interface ResourceConfig {
   resource: string;
   middlecat_url: string;
+  allow_guests: boolean;
   named_guest: boolean;
 }
 
@@ -238,68 +240,102 @@ function SignInForm({
   );
   const [guestName, setGuestName] = useState("");
   const [config, setConfig] = useState<ResourceConfig>();
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
+  const [loadingConfig, setLoadingConfig] = useState(false);
 
   async function onSubmit(e: any) {
     e.preventDefault();
+    setLoadingConfig(true);
     const res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
       timeout: 5000,
     });
-    if (res.status !== 200) {
-      setError(true);
+    if (res.status !== 200 || !res.data.authorization) {
+      setError("Could not connect to server");
+      setLoadingConfig(false);
       return;
     }
 
-    if (!res.data.require_auth) {
+    if (res.data.authorization === "no_auth") {
       signInGuest(resourceValue, "", true);
+      setLoadingConfig(false);
+      return;
+    }
+
+    const middlecat_url = res.data.middlecat_url || "";
+    const allow_guests =
+      !res.data.authorization || res.data.authorization === "allow_guests";
+    const named_guest = !!res.data.named_guest;
+
+    if (!allow_guests && !middlecat_url) {
+      setError("Server has invalid authentication configuration");
+      setLoadingConfig(false);
+      return;
+    }
+
+    if (!allow_guests && middlecat_url) {
+      signIn(resourceValue, middlecat_url);
+      setLoadingConfig(false);
+      return;
+    }
+
+    if (allow_guests && !named_guest && !middlecat_url) {
+      signInGuest(resourceValue, "guest user", false);
+      setLoadingConfig(false);
       return;
     }
 
     setConfig({
       resource: resourceValue,
-      middlecat_url: res.data.middlecat_url || "",
-      named_guest: !!res.data.named_guest || false,
+      middlecat_url,
+      allow_guests,
+      named_guest,
     });
+    setLoadingConfig(false);
   }
 
   function invalidUrl(url: string) {
     return !/^https?:\/\//.test(url);
   }
 
+  if (loadingConfig) return <div className="Loader" />;
+
   // There are two steps in the login form. The first is to connect to a server and obtain the server config.
   // Then based on this config the second step is rendered.
   if (config)
     return (
       <div>
-        <p>{config.resource}</p>
-        {config.middlecat_url ? (
+        {config.middlecat_url && (
           <button onClick={() => signIn(config.resource, config.middlecat_url)}>
-            Sign-in as user
+            Sign-in
           </button>
-        ) : null}
-        <div className="Divider">
-          <div>OR</div>
-        </div>
-        {config.named_guest && (
-          <input
-            type="name"
-            id="name"
-            name="name"
-            placeholder={"username (optional)"}
-            value={guestName}
-            style={{ textAlign: "center" }}
-            onChange={(e) => {
-              setGuestName(e.target.value);
-            }}
-          />
         )}
-        <button
-          onClick={() =>
-            signInGuest(config.resource, guestName || "guest user", false)
-          }
-        >
-          Visit as guest
-        </button>
+        {config.allow_guests && (
+          <>
+            <div className="Divider">
+              <div>OR</div>
+            </div>
+            {config.named_guest && (
+              <input
+                type="name"
+                id="name"
+                name="name"
+                placeholder={"username (optional)"}
+                value={guestName}
+                style={{ textAlign: "center" }}
+                onChange={(e) => {
+                  setGuestName(e.target.value);
+                }}
+              />
+            )}
+            <button
+              onClick={() =>
+                signInGuest(config.resource, guestName || "guest user", false)
+              }
+            >
+              Visit as guest
+            </button>
+          </>
+        )}
       </div>
     );
 
@@ -318,7 +354,7 @@ function SignInForm({
           placeholder={resourceExample || "https://amcat-server.example"}
           value={resourceValue}
           onChange={(e) => {
-            if (error) setError(false);
+            if (error) setError("");
             sessionStorage.setItem("AuthformResource", e.target.value);
             setResourceValue(e.target.value);
           }}
@@ -328,7 +364,7 @@ function SignInForm({
       <button disabled={invalidUrl(resourceValue)} type="submit">
         {signInLabel || "Sign-in"}
       </button>
-      {error && <p>Could not connect to server</p>}
+      {error && <p>{error}</p>}
     </form>
   );
 }
@@ -368,14 +404,14 @@ function SignOutForm({
     </div>
   );
 
-  if (user.authDisabled) {
+  if (!user.email) {
     return (
       <>
         {userJSX}
 
         <div className="SignOut">
           <button onClick={() => signOut(false)}>
-            {resourceFixed ? "Reconnect to server" : "Change server"}
+            {resourceFixed ? "Reconnect" : "Disconnect"}
           </button>
         </div>
       </>

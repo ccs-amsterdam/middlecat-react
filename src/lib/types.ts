@@ -13,8 +13,6 @@ export interface MiddlecatUser {
   resource: string;
   /** Kill the AmCAT session and optionally also the MiddleCat session. Used internally on signout */
   killSession: (signOutMiddlecat: boolean) => Promise<void>;
-  /** Optional boolean for when authorization is disabled on server */
-  authDisabled?: boolean;
 }
 
 export interface AccessTokenPayload {
