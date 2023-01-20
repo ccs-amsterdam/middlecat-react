@@ -16,10 +16,8 @@
     "README.md"
   ],
   "dependencies": {
-    "@types/uuid": "^9.0.0",
     "jwt-decode": "^3.1.2",
     "pkce-challenge": "^3.0.0",
-    "uuid": "^9.0.0",
     "web-vitals": "^2.1.4"
   },
   "peerDependencies": {

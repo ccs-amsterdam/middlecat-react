@@ -1,7 +1,6 @@
 import axios from "axios";
-import jwtDecode from "jwt-decode";
 import { Dispatch, SetStateAction } from "react";
-import { AccessTokenPayload, MiddlecatUser } from "./types";
+import { MiddlecatUser } from "./types";
 
 /**
  *
@@ -12,27 +11,26 @@ import { AccessTokenPayload, MiddlecatUser } from "./types";
  * @returns
  */
 export function createGuestUser(
-  guest_token: string,
-  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>
+  name: string,
+  resource: string,
+  setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
+  authDisabled: boolean = false
 ): MiddlecatUser | undefined {
-  if (!guest_token) return undefined;
-  const payload: AccessTokenPayload = jwtDecode(guest_token);
+  if (!resource) return undefined;
 
   const api = axios.create({
-    headers: {
-      Authorization: `Bearer ${guest_token}`,
-    },
+    baseURL: resource,
   });
 
   const killSession = async (signOutMiddlecat: boolean) => setUser(undefined);
 
   return {
     email: "",
-    name: payload.name,
+    name: authDisabled ? "Authorization disabled" : name || "guest user",
     image: "",
     api,
-    guestSessionId: payload.guestSessionId || "",
-    resource: payload.resource || "",
+    resource: resource || "",
     killSession,
+    authDisabled,
   };
 }

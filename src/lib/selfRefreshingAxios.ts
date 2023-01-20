@@ -33,6 +33,14 @@ export default function selfRefreshingAxios(
 
   api.interceptors.request.use(
     async (config) => {
+      // ensure that resource is the base url, so that its not easy to
+      // to send a request with the tokens somewhere else
+      config.baseURL = resource;
+
+      // If there is no access_token, this is a guest session
+      if (!currentAccessToken) return config;
+
+      // If there is an access_token, see if it's still valid and if not refresh
       const { access_token, refresh_token } = await getTokens(
         currentAccessToken,
         currentRefreshToken,
@@ -47,10 +55,6 @@ export default function selfRefreshingAxios(
         setUser(undefined);
         throw new Error("Could not refresh token");
       }
-
-      // ensure that resource is the base url, so that its not easy to
-      // to send a request with the tokens somewhere else
-      config.baseURL = resource;
 
       config.headers = {
         Authorization: `Bearer ${currentAccessToken}`,

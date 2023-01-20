@@ -54,6 +54,7 @@ export async function authorizationCode(
     // send an obvious wrong code_verifier, which will cause middlecat to kill the session
     code_verifier = "DoYouReallyWantToHurtMe?";
   }
+
   const body: any = {
     grant_type: "authorization_code",
     code,

@@ -14,7 +14,7 @@ import { createMiddlecatUser } from "./createMiddlecatUser";
 import authFormGenerator from "./authFormGenerator";
 import { refreshToken } from "./middlecatOauth";
 import { createGuestUser } from "./createGuesteUser";
-import createGuestToken from "./createGuestToken";
+import axios from "axios";
 
 // This hook is to be used in React applications using middlecat
 
@@ -33,7 +33,7 @@ import createGuestToken from "./createGuestToken";
  * added to the axios call. Also, we use short-lived access tokens with
  * rotating refresh tokens and automatic
  *
- * @param autoReconnect If user did not log out, automatically reconnect on next visit
+ * @param autoReconnect If user did not log out, automatically reconnect on next visit. default is true
  * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
  * @param bff           If TRUE, and
  * @returns
@@ -50,7 +50,7 @@ interface useMiddlecatOut {
   AuthForm: any;
   loading: boolean;
   signIn: (resource: string) => void;
-  signInGuest: (resource: string, name: string, guestToken?: string) => void;
+  signInGuest: (resource: string, name: string, authDisabled: boolean) => void;
   signOut: (signOutMiddlecat: boolean) => void;
 }
 
@@ -58,7 +58,7 @@ export default function useMiddlecat(
   {
     autoReconnect = true,
     storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
-    bff = undefined,
+    bff = undefined, // use backend-for-frontend to intercept refresh token for better security. Requires setting up a bff endpoint,
   }: useMiddlecatParams = { autoReconnect: true, storeToken: false }
 ): useMiddlecatOut {
   const [user, setUser] = useState<MiddlecatUser>();
@@ -91,13 +91,16 @@ export default function useMiddlecat(
   }, []);
 
   const signInGuest = useCallback(
-    (resource: string, name: string, guestLoginId?: string) => {
+    (resource: string, name: string, authDisabled: boolean) => {
       let r = safeURL(resource);
-      const guest_token = createGuestToken(r, name, guestLoginId);
       localStorage.setItem("resource", r);
-      if (storeToken || bff) localStorage.setItem(r + "_guest", guest_token);
-      const user = createGuestUser(guest_token, setUser);
-      setUser(user);
+
+      if (authDisabled) {
+        setUser(createGuestUser("authentication disabled", r, setUser, true));
+      } else {
+        if (storeToken || bff) localStorage.setItem(r + "_guest", name);
+        setUser(createGuestUser(name, r, setUser));
+      }
     },
     [bff, storeToken]
   );
@@ -160,17 +163,20 @@ export default function useMiddlecat(
       return;
     }
 
-    // If autoReconnect and storeToken are used, reconnect with the stored refresh token
+    // If autoReconnect and storeToken/bff are used, reconnect with the stored refresh token
     if (autoReconnect && (storeToken || bff)) {
-      resumeConnection(resource, storeToken, bff, setUser, setLoading);
+      resumeConnection(
+        resource,
+        storeToken,
+        bff,
+        setUser,
+        setLoading,
+        setError
+      );
       return;
+    } else {
+      setLoading(false);
     }
-
-    // If autoReconnect is used without storeToken, redirect to middlecat
-    // (currently disabled, because not sure about user experience)
-    //if (autoReconnect) signIn(resource);
-
-    setLoading(false);
   }, [autoReconnect, storeToken, signIn, bff]);
 
   const AuthForm = useMemo(() => {
@@ -217,22 +223,38 @@ function connectWithAuthGrant(
     });
 }
 
-function resumeConnection(
+async function resumeConnection(
   resource: string,
   storeToken: boolean,
   bff: string | undefined,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
-  setLoading: Dispatch<SetStateAction<boolean>>
+  setLoading: Dispatch<SetStateAction<boolean>>,
+  setError: Dispatch<SetStateAction<string>>
 ) {
   const middlecat = localStorage.getItem(resource + "_middlecat") || "";
   const refresh_token =
     storeToken && !bff ? localStorage.getItem(resource + "_refresh") : null;
-  const guest_token: string = localStorage.getItem(resource + "_guest") || "";
 
-  console.log("test");
-  if (guest_token) {
-    console.log(guest_token);
-    setUser(createGuestUser(guest_token, setUser));
+  // check server, because config might have changed
+  const res = await axios.get(`${safeURL(resource)}/middlecat`, {
+    timeout: 5000,
+  });
+  if (res.status !== 200) {
+    setLoading(false);
+    setError(`could not connect to ${resource}`);
+    return;
+  }
+  const authDisabled = !res.data.require_auth;
+
+  if (authDisabled) {
+    setUser(createGuestUser("", resource, setUser, true));
+    setLoading(false);
+    return null;
+  }
+
+  const guest: string = localStorage.getItem(resource + "_guest") || "";
+  if (guest) {
+    setUser(createGuestUser(guest, resource, setUser));
     setLoading(false);
     return null;
   }

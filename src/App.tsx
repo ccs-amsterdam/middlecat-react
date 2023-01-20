@@ -3,7 +3,7 @@ import "./App.css";
 import useMiddlecat from "./lib/useMiddlecat";
 
 function App() {
-  const { user, AuthForm } = useMiddlecat();
+  const { user, AuthForm } = useMiddlecat({ storeToken: true });
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
@@ -30,6 +30,7 @@ function App() {
           <p>{msg}</p>
           <p style={{ fontSize: "1.2em" }}>
             {msg &&
+              msg !== "Unauthenticated" &&
               "token is automatically refreshed about 10 seconds before it expires"}
           </p>
         </div>

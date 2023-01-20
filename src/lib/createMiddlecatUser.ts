@@ -47,7 +47,6 @@ export function createMiddlecatUser(
     image: payload.image || "",
     api,
     resource: resource || "",
-    guestSessionId: "",
     killSession,
   };
 }

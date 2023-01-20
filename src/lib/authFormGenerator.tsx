@@ -129,7 +129,7 @@ interface Props {
   loading: boolean;
   error: string;
   signIn: (resource: string, middlecat_url?: string) => void;
-  signInGuest: (resource: string, name: string, guestLoginId?: string) => void;
+  signInGuest: (resource: string, name: string, authDisabled: boolean) => void;
   signOut: () => void;
 }
 
@@ -185,6 +185,7 @@ export default function authFormGenerator({
       return (
         <SignOutForm
           user={user}
+          resourceFixed={resourceFixed}
           signOut={signOut}
           signOutLabel={signOutLabel}
         />
@@ -206,7 +207,7 @@ export default function authFormGenerator({
 
 interface SignInFormProps {
   signIn: (resource: string, middlecat_url?: string) => void;
-  signInGuest: (resource: string, name: string, guestLoginId?: string) => void;
+  signInGuest: (resource: string, name: string, authDisabled: boolean) => void;
   resourceLabel?: string;
   resourceExample?: string;
   resourceSuggestion?: string;
@@ -216,8 +217,8 @@ interface SignInFormProps {
 
 interface ResourceConfig {
   resource: string;
-  require_auth: boolean;
   middlecat_url: string;
+  named_guest: boolean;
 }
 
 function SignInForm({
@@ -249,45 +250,57 @@ function SignInForm({
       return;
     }
 
-    const middlecat_url = res.data.middlecat_url || "";
-    const require_auth = !!res.data.require_auth;
-    setConfig({ resource: resourceValue, middlecat_url, require_auth });
+    if (!res.data.require_auth) {
+      signInGuest(resourceValue, "", true);
+      return;
+    }
+
+    setConfig({
+      resource: resourceValue,
+      middlecat_url: res.data.middlecat_url || "",
+      named_guest: !!res.data.named_guest || false,
+    });
   }
 
   function invalidUrl(url: string) {
     return !/^https?:\/\//.test(url);
   }
 
+  // There are two steps in the login form. The first is to connect to a server and obtain the server config.
+  // Then based on this config the second step is rendered.
   if (config)
     return (
-      <form>
+      <div>
+        <p>{config.resource}</p>
         {config.middlecat_url ? (
-          <>
-            <button
-              onClick={() => signIn(config.resource, config.middlecat_url)}
-            >
-              Sign-in as user
-            </button>
-          </>
+          <button onClick={() => signIn(config.resource, config.middlecat_url)}>
+            Sign-in as user
+          </button>
         ) : null}
         <div className="Divider">
           <div>OR</div>
         </div>
-        <input
-          type="name"
-          id="name"
-          name="name"
-          placeholder={"username (optional)"}
-          value={guestName}
-          style={{ textAlign: "center" }}
-          onChange={(e) => {
-            setGuestName(e.target.value);
-          }}
-        />
-        <button onClick={() => signInGuest(config.resource, guestName)}>
+        {config.named_guest && (
+          <input
+            type="name"
+            id="name"
+            name="name"
+            placeholder={"username (optional)"}
+            value={guestName}
+            style={{ textAlign: "center" }}
+            onChange={(e) => {
+              setGuestName(e.target.value);
+            }}
+          />
+        )}
+        <button
+          onClick={() =>
+            signInGuest(config.resource, guestName || "guest user", false)
+          }
+        >
           Visit as guest
         </button>
-      </form>
+      </div>
     );
 
   return (
@@ -322,34 +335,56 @@ function SignInForm({
 
 interface SignOutFormProps {
   user: MiddlecatUser;
+  resourceFixed?: string;
   signOut: (signOutMiddlecat: boolean) => void;
   signOutLabel?: string;
 }
 
-function SignOutForm({ user, signOut, signOutLabel }: SignOutFormProps) {
+function SignOutForm({
+  user,
+  resourceFixed,
+  signOut,
+  signOutLabel,
+}: SignOutFormProps) {
+  const userJSX = (
+    <div className="User">
+      {user?.image ? (
+        <img
+          className="Image"
+          src={user.image}
+          referrer-policy="no-referrer"
+          alt=""
+        />
+      ) : null}
+      <div>
+        {user?.name || user?.email}
+        {user?.name && user?.email ? (
+          <>
+            <br />
+            <span style={{ fontSize: "0.8em" }}>{user?.email}</span>
+          </>
+        ) : null}
+      </div>
+    </div>
+  );
+
+  if (user.authDisabled) {
+    return (
+      <>
+        {userJSX}
+
+        <div className="SignOut">
+          <button onClick={() => signOut(false)}>
+            {resourceFixed ? "Reconnect to server" : "Change server"}
+          </button>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <div className="User">
-        {user?.image ? (
-          <img
-            className="Image"
-            src={user.image}
-            referrer-policy="no-referrer"
-            alt=""
-          />
-        ) : null}
-        <div>
-          {user?.name || user?.email}
-          {user?.name ? (
-            <>
-              <br />
-              <span style={{ fontSize: "0.8em" }}>
-                {user?.guestSessionId ? "guest user" : user?.email}
-              </span>
-            </>
-          ) : null}
-        </div>
-      </div>
+      {userJSX}
 
       <div className="SignOut">
         <button onClick={() => signOut(false)}>
