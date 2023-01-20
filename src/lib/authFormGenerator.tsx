@@ -249,21 +249,22 @@ function SignInForm({
     const res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
       timeout: 5000,
     });
-    if (res.status !== 200 || !res.data.authorization) {
+    if (res.status !== 200) {
       setError("Could not connect to server");
       setLoadingConfig(false);
       return;
     }
 
-    if (res.data.authorization === "no_auth") {
+    const auth = res.data.authorization || "allow_guests";
+
+    if (auth === "no_auth") {
       signInGuest(resourceValue, "", true);
       setLoadingConfig(false);
       return;
     }
 
     const middlecat_url = res.data.middlecat_url || "";
-    const allow_guests =
-      !res.data.authorization || res.data.authorization === "allow_guests";
+    const allow_guests = auth === "allow_guests";
     const named_guest = !!res.data.named_guest;
 
     if (!allow_guests && !middlecat_url) {
