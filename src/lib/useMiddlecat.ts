@@ -236,10 +236,15 @@ async function resumeConnection(
     storeToken && !bff ? localStorage.getItem(resource + "_refresh") : null;
 
   // check server, because config might have changed
-  const res = await axios.get(`${safeURL(resource)}/middlecat`, {
-    timeout: 5000,
-  });
-  if (res.status !== 200) {
+  let res;
+  try {
+    res = await axios.get(`${safeURL(resource)}/middlecat`, {
+      timeout: 5000,
+    });
+  } catch (e) {
+    console.error(e);
+  }
+  if (!res || res.status !== 200) {
     setLoading(false);
     setError(`could not connect to ${resource}`);
     return;

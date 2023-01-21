@@ -246,10 +246,18 @@ function SignInForm({
   async function onSubmit(e: any) {
     e.preventDefault();
     setLoadingConfig(true);
-    const res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
-      timeout: 5000,
-    });
-    if (res.status !== 200) {
+
+    // need to add try catch, because axios throws an error if the server is not reachable
+    let res;
+    try {
+      res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
+        timeout: 5000,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!res || res.status !== 200) {
       setError("Could not connect to server");
       setLoadingConfig(false);
       return;
@@ -312,9 +320,13 @@ function SignInForm({
         )}
         {config.allow_guests && (
           <>
-            <div className="Divider">
-              <div>OR</div>
-            </div>
+            {config.named_guest && config.middlecat_url ? (
+              <div className="Divider">
+                <div>OR</div>
+              </div>
+            ) : (
+              <div style={{ height: "1rem" }}></div>
+            )}
             {config.named_guest && (
               <input
                 type="name"

@@ -21,10 +21,15 @@ export async function authorize(resource: string, middlecat_url?: string) {
   const clientId = clientURL.host;
 
   if (!middlecat_url) {
-    const res = await axios.get(`${safeURL(resource)}/middlecat`, {
-      timeout: 5000,
-    });
-    if (res.status !== 200 || !res.data.middlecat_url)
+    let res;
+    try {
+      res = await axios.get(`${safeURL(resource)}/middlecat`, {
+        timeout: 5000,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+    if (!res || res.status !== 200 || !res.data.middlecat_url)
       throw new Error("Could not get MiddleCat URL from resource");
     middlecat_url = res.data.middlecat_url;
   }

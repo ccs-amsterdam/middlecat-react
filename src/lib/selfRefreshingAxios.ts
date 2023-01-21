@@ -41,24 +41,28 @@ export default function selfRefreshingAxios(
       if (!currentAccessToken) return config;
 
       // If there is an access_token, see if it's still valid and if not refresh
-      const { access_token, refresh_token } = await getTokens(
-        currentAccessToken,
-        currentRefreshToken,
-        resource,
-        bff
-      );
-      currentAccessToken = access_token;
-      currentRefreshToken = refresh_token;
-      if (storeToken && !bff)
-        localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
-      if (!currentAccessToken) {
-        setUser(undefined);
-        throw new Error("Could not refresh token");
-      }
+      try {
+        const { access_token, refresh_token } = await getTokens(
+          currentAccessToken,
+          currentRefreshToken,
+          resource,
+          bff
+        );
+        currentAccessToken = access_token;
+        currentRefreshToken = refresh_token;
+        if (storeToken && !bff)
+          localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
+        if (!currentAccessToken) {
+          setUser(undefined);
+          throw new Error("Could not refresh token");
+        }
 
-      config.headers = {
-        Authorization: `Bearer ${currentAccessToken}`,
-      };
+        config.headers = {
+          Authorization: `Bearer ${currentAccessToken}`,
+        };
+      } catch (e) {
+        console.error(e);
+      }
 
       return config;
     },
