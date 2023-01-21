@@ -26,7 +26,7 @@ export function createGuestUser(
 
   return {
     email: "",
-    name: authDisabled ? "Authorization disabled" : name || "guest user",
+    name: authDisabled ? "auth disabled" : name || "guest",
     image: "",
     api,
     resource: resource || "",

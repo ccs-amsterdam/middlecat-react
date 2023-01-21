@@ -23,7 +23,7 @@ export async function authorize(resource: string, middlecat_url?: string) {
   if (!middlecat_url) {
     let res;
     try {
-      res = await axios.get(`${safeURL(resource)}/middlecat`, {
+      res = await axios.get(`${safeURL(resource)}/config`, {
         timeout: 5000,
       });
     } catch (e) {

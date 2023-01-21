@@ -250,7 +250,7 @@ function SignInForm({
     // need to add try catch, because axios throws an error if the server is not reachable
     let res;
     try {
-      res = await axios.get(`${safeURL(resourceValue)}/middlecat`, {
+      res = await axios.get(`${safeURL(resourceValue)}/config`, {
         timeout: 5000,
       });
     } catch (e) {

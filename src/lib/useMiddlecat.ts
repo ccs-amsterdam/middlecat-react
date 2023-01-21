@@ -76,6 +76,7 @@ export default function useMiddlecat(
       .then((middlecat_redirect) => {
         localStorage.setItem("resource", r);
         localStorage.setItem("awaiting_oauth_redirect", "true");
+        localStorage.removeItem(r + "_guest");
         window.location.href = middlecat_redirect;
       })
       .catch((e) => {
@@ -96,6 +97,7 @@ export default function useMiddlecat(
       localStorage.setItem("resource", r);
 
       if (authDisabled) {
+        localStorage.removeItem(r + "_guest");
         setUser(createGuestUser("authentication disabled", r, setUser, true));
       } else {
         if (storeToken || bff) localStorage.setItem(r + "_guest", name);
@@ -109,8 +111,8 @@ export default function useMiddlecat(
     (signOutMiddlecat: boolean = false) => {
       setLoading(true);
       const resource = localStorage.getItem("resource");
-      localStorage.setItem(resource + "_guest", "");
-      localStorage.setItem("resource", "");
+      localStorage.removeItem(resource + "_guest");
+      localStorage.removeItem("resource");
       if (!user) return;
       // currently doesn't tell the user if could not kill
       // session because middlecat can't be reached. Should we?
@@ -238,7 +240,7 @@ async function resumeConnection(
   // check server, because config might have changed
   let res;
   try {
-    res = await axios.get(`${safeURL(resource)}/middlecat`, {
+    res = await axios.get(`${safeURL(resource)}/config`, {
       timeout: 5000,
     });
   } catch (e) {
@@ -249,16 +251,15 @@ async function resumeConnection(
     setError(`could not connect to ${resource}`);
     return;
   }
-  const authDisabled = !res.data.require_auth;
 
-  if (authDisabled) {
+  if (res.data.authorization === "no_auth") {
     setUser(createGuestUser("", resource, setUser, true));
     setLoading(false);
     return null;
   }
 
   const guest: string = localStorage.getItem(resource + "_guest") || "";
-  if (guest) {
+  if (res.data.authorization === "allow_guests" && guest) {
     setUser(createGuestUser(guest, resource, setUser));
     setLoading(false);
     return null;
