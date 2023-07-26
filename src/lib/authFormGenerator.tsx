@@ -12,6 +12,7 @@ interface LayoutProps {
 const AuthContainer = styled.div<LayoutProps>`
   --primary: ${(p) => p.primary || "#38c7b9"};
   --secondary: ${(p) => p.secondary || "#1d7269"};
+
   color: var(--secondary);
   display: flex;
   text-align: center;
@@ -44,6 +45,7 @@ const AuthContainer = styled.div<LayoutProps>`
   }
   button {
     width: 100%;
+    color: black;
     background: white;
     border: 2px solid var(--primary);
     font-size: inherit;
@@ -66,6 +68,7 @@ const AuthContainer = styled.div<LayoutProps>`
     height: 40px;
     padding: 10px 10px 10px 10px;
     font-size: inherit;
+    background: white;
   }
   .SignOut {
     display: flex;
@@ -77,7 +80,7 @@ const AuthContainer = styled.div<LayoutProps>`
   .Loader {
     margin: auto;
     border: 10px solid #f3f3f3;
-    border-top: 10px solid #3498db;
+    border-top: 10px solid var(--secondary);
     border-radius: 50%;
     width: 80px;
     height: 80px;
@@ -235,8 +238,8 @@ function SignInForm({
   signInLabel,
 }: SignInFormProps) {
   const [resourceValue, setResourceValue] = useState(
-    sessionStorage.getItem("AuthformResource") ||
-      resourceFixed ||
+    resourceFixed ||
+      sessionStorage.getItem("AuthformResource") ||
       resourceSuggestion ||
       ""
   );
