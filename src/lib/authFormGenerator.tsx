@@ -129,6 +129,7 @@ interface Props {
   user: MiddlecatUser | undefined;
   loading: boolean;
   error: string;
+  fixedResource?: string;
   signIn: (resource: string, middlecat_url?: string) => void;
   signInGuest: (resource: string, name: string, authDisabled: boolean) => void;
   signOut: () => void;
@@ -155,6 +156,7 @@ export default function authFormGenerator({
   user,
   loading,
   error,
+  fixedResource,
   signIn,
   signInGuest,
   signOut,
@@ -179,14 +181,14 @@ export default function authFormGenerator({
             resourceLabel={resourceLabel}
             resourceExample={resourceExample}
             resourceSuggestion={resourceSuggestion}
-            resourceFixed={resourceFixed}
+            resourceFixed={fixedResource || resourceFixed}
             signInLabel={signInLabel}
           />
         );
       return (
         <SignOutForm
           user={user}
-          resourceFixed={resourceFixed}
+          resourceFixed={fixedResource || resourceFixed}
           signOut={signOut}
           signOutLabel={signOutLabel}
         />

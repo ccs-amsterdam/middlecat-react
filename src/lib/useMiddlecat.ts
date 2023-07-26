@@ -31,11 +31,16 @@ import axios from "axios";
  * because we do not want to store tokens in localstorage. We do still need to keep
  * the tokens in memory, but to mitigate risks the tokens are kept in a closure and
  * added to the axios call. Also, we use short-lived access tokens with
- * rotating refresh tokens and automatic
+ * rotating refresh tokens and re-use detection.
+ *
+ * The securest option is to use a backend-for-frontend (BFF) to intercept the refresh
+ * token and store it in a secure httpOnly cookie. This requires a backend server that
+ * is on same domain (more specifically, samesite) as the client.
  *
  * @param autoReconnect If user did not log out, automatically reconnect on next visit. default is true
  * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
- * @param bff           If TRUE, and
+ * @param bff           If a samesite BFF is available, provide the endpoint url here to intercept the refresh token.
+ * @param fixedResource If you want to use a fixed resource, provide it here. Otherwise, the user will be asked to choose a resource.
  * @returns
  */
 
@@ -43,6 +48,7 @@ interface useMiddlecatParams {
   autoReconnect?: boolean;
   storeToken?: boolean;
   bff?: string | undefined;
+  fixedResource?: string | undefined;
 }
 
 interface useMiddlecatOut {
@@ -59,6 +65,7 @@ export default function useMiddlecat(
     autoReconnect = true,
     storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
     bff = undefined, // use backend-for-frontend to intercept refresh token for better security. Requires setting up a bff endpoint,
+    fixedResource = undefined,
   }: useMiddlecatParams = { autoReconnect: true, storeToken: false }
 ): useMiddlecatOut {
   const [user, setUser] = useState<MiddlecatUser>();
@@ -133,6 +140,7 @@ export default function useMiddlecat(
     //   then middlecat just redirected here and we should complete the oauth dance
     // - if this is not the case, but we do have a resource and autoReconnect is set to true,
     //   immediately initiate another oauth dance
+    // - if
     if (!runOnce.current) return;
     runOnce.current = false;
 
@@ -176,9 +184,9 @@ export default function useMiddlecat(
         setError
       );
       return;
-    } else {
-      setLoading(false);
     }
+
+    setLoading(false);
   }, [autoReconnect, storeToken, signIn, bff]);
 
   const AuthForm = useMemo(() => {
@@ -186,11 +194,12 @@ export default function useMiddlecat(
       user,
       loading,
       error,
+      fixedResource,
       signIn,
       signInGuest,
       signOut,
     });
-  }, [user, loading, error, signIn, signInGuest, signOut]);
+  }, [user, loading, error, fixedResource, signIn, signInGuest, signOut]);
 
   return { user, AuthForm, loading, signIn, signInGuest, signOut };
 }
