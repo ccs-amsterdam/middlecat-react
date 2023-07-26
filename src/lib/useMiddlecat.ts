@@ -5,7 +5,6 @@ import {
   useRef,
   Dispatch,
   SetStateAction,
-  useMemo,
 } from "react";
 import { safeURL, silentDeleteSearchParams } from "./util";
 import { authorizationCode, authorize } from "./middlecatOauth";
@@ -140,7 +139,6 @@ export default function useMiddlecat(
     //   then middlecat just redirected here and we should complete the oauth dance
     // - if this is not the case, but we do have a resource and autoReconnect is set to true,
     //   immediately initiate another oauth dance
-    // - if
     if (!runOnce.current) return;
     runOnce.current = false;
 
@@ -189,8 +187,19 @@ export default function useMiddlecat(
     setLoading(false);
   }, [autoReconnect, storeToken, signIn, bff]);
 
-  const AuthForm = useMemo(() => {
-    return authFormGenerator({
+  const [AuthForm, setAuthForm] = useState<any>(() =>
+    authFormGenerator({
+      user,
+      loading,
+      error,
+      fixedResource,
+      signIn,
+      signInGuest,
+      signOut,
+    })
+  );
+  useEffect(() => {
+    const AuthForm = authFormGenerator({
       user,
       loading,
       error,
@@ -199,6 +208,7 @@ export default function useMiddlecat(
       signInGuest,
       signOut,
     });
+    setAuthForm(AuthForm);
   }, [user, loading, error, fixedResource, signIn, signInGuest, signOut]);
 
   return { user, AuthForm, loading, signIn, signInGuest, signOut };

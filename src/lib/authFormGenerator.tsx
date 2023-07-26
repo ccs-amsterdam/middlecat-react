@@ -87,6 +87,10 @@ const AuthContainer = styled.div<LayoutProps>`
     animation: spin 1s linear infinite;
   }
 
+  .ResourceLabel {
+    line-height: 3rem;
+  }
+
   p {
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
@@ -174,6 +178,12 @@ export default function authFormGenerator({
     signInLabel,
     signOutLabel,
   }: AuthFormProps) => {
+    // fixedresource can be specified in two places, and can be a relative path
+    let fixedResourceURL = fixedResource || resourceFixed;
+    if (fixedResourceURL && !/^https?:\/\//.test(fixedResourceURL)) {
+      fixedResourceURL = `${window.location.origin}/${fixedResourceURL}`;
+    }
+
     function ConditionalRender() {
       if (loading) return <div className="Loader" />;
       if (!user)
@@ -184,14 +194,14 @@ export default function authFormGenerator({
             resourceLabel={resourceLabel}
             resourceExample={resourceExample}
             resourceSuggestion={resourceSuggestion}
-            resourceFixed={fixedResource || resourceFixed}
+            resourceFixed={fixedResourceURL}
             signInLabel={signInLabel}
           />
         );
       return (
         <SignOutForm
           user={user}
-          resourceFixed={fixedResource || resourceFixed}
+          resourceFixed={fixedResourceURL}
           signOut={signOut}
           signOutLabel={signOutLabel}
         />
@@ -255,6 +265,7 @@ function SignInForm({
     // need to add try catch, because axios throws an error if the server is not reachable
     let res;
     try {
+      console.log(`${safeURL(resourceValue)}/config`);
       res = await axios.get(`${safeURL(resourceValue)}/config`, {
         timeout: 5000,
       });
@@ -308,6 +319,7 @@ function SignInForm({
   }
 
   function invalidUrl(url: string) {
+    if (resourceFixed) return false;
     return !/^https?:\/\//.test(url);
   }
 
@@ -320,7 +332,7 @@ function SignInForm({
       <div>
         {config.middlecat_url && (
           <button onClick={() => signIn(config.resource, config.middlecat_url)}>
-            Sign-in
+            Authenticate
           </button>
         )}
         {config.allow_guests && (
@@ -359,12 +371,10 @@ function SignInForm({
 
   return (
     <form onSubmit={onSubmit}>
-      <label>
+      <label className="ResourceLabel">
         <b>{resourceLabel || "Connect to server"}</b>
       </label>
-      {resourceFixed ? (
-        <p>{resourceFixed}</p>
-      ) : (
+      {resourceFixed ? null : (
         <input
           type="url"
           id="url"
