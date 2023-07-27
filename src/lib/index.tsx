@@ -1,7 +1,7 @@
-import useMiddlecat from "./useMiddlecatConnection";
+import { MiddlecatProvider, useMiddlecat } from "./MiddlecatProvider";
 import bffAuthHandler from "./bffAuthHandler";
+import type { Middlecat, MiddlecatUser } from "./types";
+import AuthForm from "./AuthForm";
 
-import type { MiddlecatUser } from "./types";
-
-export { useMiddlecat as default, bffAuthHandler };
-export type { MiddlecatUser };
+export { MiddlecatProvider, useMiddlecat, bffAuthHandler, AuthForm };
+export type { Middlecat, MiddlecatUser };
