@@ -11,10 +11,10 @@ import { MiddlecatUser } from "./types";
  * @returns
  */
 export function createGuestUser(
-  name: string,
   resource: string,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
-  authDisabled: boolean = false
+  authDisabled: boolean = false,
+  middlecat_url?: string
 ): MiddlecatUser | undefined {
   if (!resource) return undefined;
 
@@ -26,10 +26,13 @@ export function createGuestUser(
 
   return {
     email: "",
-    name: authDisabled ? "auth disabled" : name || "guest",
+    name: "",
     image: "",
+    authenticated: false,
+    authDisabled,
     api,
     resource: resource || "",
+    middlecat: middlecat_url || "",
     killSession,
   };
 }

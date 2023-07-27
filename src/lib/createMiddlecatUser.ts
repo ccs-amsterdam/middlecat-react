@@ -45,8 +45,10 @@ export function createMiddlecatUser(
     email: payload.email || "",
     name: payload.name || "",
     image: payload.image || "",
+    authenticated: payload.email ? true : false,
     api,
     resource: resource || "",
+    middlecat: payload.middlecat,
     killSession,
   };
 }

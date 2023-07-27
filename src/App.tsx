@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import "./App.css";
-import useMiddlecat from "./lib/useMiddlecat";
+import { MiddlecatProvider, useMiddlecat } from "./lib/MiddlecatProvider";
+import AuthForm from "./lib/AuthForm";
 
 function App() {
-  const { user, AuthForm } = useMiddlecat({
-    storeToken: true,
-  });
+  return (
+    <MiddlecatProvider storeToken={true}>
+      <Demo />
+    </MiddlecatProvider>
+  );
+}
+
+function Demo() {
+  const { user } = useMiddlecat();
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
@@ -29,6 +36,7 @@ function App() {
       <div className="Container">
         <AuthForm resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource" />
         <div style={{ color: "grey" }}>
+          <p>{user && !user.email ? "Signed in as guest" : null}</p>
           <p>{msg || "..."}</p>
           <p style={{ fontSize: "1.2em" }}>
             {msg &&

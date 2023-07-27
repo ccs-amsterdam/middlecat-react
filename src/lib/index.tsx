@@ -1,4 +1,4 @@
-import useMiddlecat from "./useMiddlecat";
+import useMiddlecat from "./useMiddlecatConnection";
 import bffAuthHandler from "./bffAuthHandler";
 
 import type { MiddlecatUser } from "./types";

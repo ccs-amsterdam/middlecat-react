@@ -8,9 +8,9 @@ export function silentDeleteSearchParams(items: string[]) {
   window.history.replaceState(null, "", url);
 }
 
-export function safeURL(url: string) {
-  const u = new URL(url);
-  const valid = ["http:", "https:"].includes(u.protocol);
-  if (!valid) return "";
+export function prepareURL(url: string) {
+  if (typeof window !== "undefined" && !/^https?:\/\//.test(url)) {
+    url = `${window.location.origin}/${url}`;
+  }
   return url.replace(/\/$/, "");
 }

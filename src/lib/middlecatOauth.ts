@@ -3,7 +3,7 @@ import pkceChallenge from "pkce-challenge";
 import { Dispatch, SetStateAction } from "react";
 import { MiddlecatUser } from "./types";
 
-import { safeURL } from "./util";
+import { prepareURL } from "./util";
 
 export async function authorize(resource: string, middlecat_url?: string) {
   // we makes sure that the redirect url doesn't contain parameters from a previous oauth flow.
@@ -23,7 +23,7 @@ export async function authorize(resource: string, middlecat_url?: string) {
   if (!middlecat_url) {
     let res;
     try {
-      res = await axios.get(`${safeURL(resource)}/config`, {
+      res = await axios.get(`${prepareURL(resource)}/config`, {
         timeout: 5000,
       });
     } catch (e) {
@@ -105,6 +105,9 @@ export async function refreshToken(
     body.resource = resource;
     url = bff;
   }
+
+  if (!body.refresh_token && !body.refresh_id)
+    return { access_token: "", refresh_token: "" };
 
   const res = await axios.post(url, body);
 
