@@ -249,7 +249,7 @@ async function resumeConnection(
       resource,
       bff
     );
-    if (access_token && refresh_token) {
+    if (access_token) {
       const user = createMiddlecatUser(
         access_token,
         refresh_token,
