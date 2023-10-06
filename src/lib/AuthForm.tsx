@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import styled from "styled-components";
 import axios from "axios";
 import { MiddlecatUser } from "./types";
@@ -8,6 +8,7 @@ import { useMiddlecat } from "./MiddlecatProvider";
 interface LayoutProps {
   primary?: string;
   secondary?: string;
+  fontSize?: string;
 }
 
 const AuthContainer = styled.div<LayoutProps>`
@@ -19,7 +20,7 @@ const AuthContainer = styled.div<LayoutProps>`
   text-align: center;
   flex-direction: column;
   position: relative;
-  font-size: 1.8em;
+  font-size: ${(p) => p.fontSize || "1.4em"};
 
   .InnerContainer {
     box-sizing: border-box;
@@ -85,7 +86,7 @@ const AuthContainer = styled.div<LayoutProps>`
     border-radius: 50%;
     width: 80px;
     height: 80px;
-    animation: spin 1s linear infinite;
+    animation: spin 1s linear infinite, delayedFadeIn 1s linear;
   }
 
   .ResourceLabel {
@@ -122,34 +123,34 @@ const AuthContainer = styled.div<LayoutProps>`
     z-index: 1;
     border-bottom: 2px solid;
   }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
-    }
-    100% {
-      transform: rotate(360deg);
-    }
-  }
 `;
 
 interface AuthFormProps {
   primary?: string;
   secondary?: string;
+  fontSize?: string;
   resourceExample?: string;
   resourceSuggestion?: string;
   resourceFixed?: string;
-  signInLabel?: string;
-  signOutLabel?: string;
+  resourceRequired?: boolean;
+  signInTitle?: string;
+  signOutTitle?: string;
+  signInButtonLabel?: string;
+  signOutButtonLabel?: string;
 }
 
 export default function AuthForm({
   primary,
   secondary,
+  fontSize,
   resourceExample,
   resourceSuggestion,
-  signInLabel,
-  signOutLabel,
+  resourceFixed,
+  resourceRequired,
+  signInTitle,
+  signOutTitle,
+  signInButtonLabel,
+  signOutButtonLabel,
 }: AuthFormProps) {
   const { user, loading, error, fixedResource, signIn, signInGuest, signOut } =
     useMiddlecat();
@@ -163,23 +164,26 @@ export default function AuthForm({
           signInGuest={signInGuest}
           resourceExample={resourceExample}
           resourceSuggestion={resourceSuggestion}
-          resourceFixed={fixedResource}
-          signInLabel={signInLabel}
+          resourceFixed={fixedResource || resourceFixed}
+          resourceRequired={resourceRequired}
+          signInTitle={signInTitle}
+          signInButtonLabel={signInButtonLabel}
         />
       );
     return (
       <SignOutForm
         user={user}
-        resourceFixed={fixedResource}
+        resourceFixed={fixedResource || resourceFixed}
         signIn={signIn}
         signOut={signOut}
-        signOutLabel={signOutLabel}
+        signOutTitle={signOutTitle}
+        signOutButtonLabel={signOutButtonLabel}
       />
     );
   }
 
   return (
-    <AuthContainer primary={primary} secondary={secondary}>
+    <AuthContainer fontSize={fontSize} primary={primary} secondary={secondary}>
       <div className="InnerContainer">
         <ConditionalRender />
       </div>
@@ -198,7 +202,9 @@ interface SignInFormProps {
   resourceExample?: string;
   resourceSuggestion?: string;
   resourceFixed?: string;
-  signInLabel?: string;
+  resourceRequired?: boolean;
+  signInTitle?: string;
+  signInButtonLabel?: string;
 }
 
 // interface ResourceConfig {
@@ -213,7 +219,9 @@ function SignInForm({
   resourceExample,
   resourceSuggestion,
   resourceFixed,
-  signInLabel,
+  resourceRequired,
+  signInTitle,
+  signInButtonLabel,
 }: SignInFormProps) {
   const [resourceValue, setResourceValue] = useState(
     resourceFixed ||
@@ -225,54 +233,66 @@ function SignInForm({
   const [error, setError] = useState("");
   const [loadingConfig, setLoadingConfig] = useState(false);
 
-  async function onSubmit(e: any) {
-    e.preventDefault();
-    setLoadingConfig(true);
+  const onSubmit = useCallback(
+    async (e: any) => {
+      e.preventDefault();
+      setLoadingConfig(true);
 
-    // need to add try catch, because axios throws an error if the server is not reachable
-    let res;
-    try {
-      console.log(`${prepareURL(resourceValue)}/config`);
-      res = await axios.get(`${prepareURL(resourceValue)}/config`, {
-        timeout: 5000,
-      });
-    } catch (e) {
-      console.error(e);
-    }
+      // need to add try catch, because axios throws an error if the server is not reachable
+      let res;
+      try {
+        res = await axios.get(`${prepareURL(resourceValue)}/config`, {
+          timeout: 5000,
+        });
+      } catch (e) {
+        console.error(e);
+      }
 
-    if (!res || res.status !== 200) {
-      setError("Could not connect to server");
+      if (!res || res.status !== 200) {
+        setError("Could not connect to server");
+        setLoadingConfig(false);
+        return;
+      }
+
+      const auth = res.data.authorization || "allow_guests";
+
+      const middlecat_url = res.data.middlecat_url || "";
+      const allow_guests = auth === "allow_guests";
+
+      if (auth === "no_auth") {
+        signInGuest(resourceValue, true, middlecat_url);
+      } else if (!allow_guests && !middlecat_url) {
+        setError("Server has invalid authentication configuration");
+      } else if (!allow_guests && middlecat_url) {
+        signIn(resourceValue, middlecat_url);
+      } else if (allow_guests) {
+        signInGuest(resourceValue, false, middlecat_url);
+      }
+
       setLoadingConfig(false);
-      return;
-    }
-
-    const auth = res.data.authorization || "allow_guests";
-
-    const middlecat_url = res.data.middlecat_url || "";
-    const allow_guests = auth === "allow_guests";
-
-    if (auth === "no_auth") {
-      signInGuest(resourceValue, true, middlecat_url);
-    } else if (!allow_guests && !middlecat_url) {
-      setError("Server has invalid authentication configuration");
-    } else if (!allow_guests && middlecat_url) {
-      signIn(resourceValue, middlecat_url);
-    } else if (allow_guests) {
-      signInGuest(resourceValue, false, middlecat_url);
-    }
-
-    setLoadingConfig(false);
-  }
+    },
+    [resourceValue, signIn, signInGuest]
+  );
 
   function invalidUrl(url: string) {
     if (resourceFixed) return false;
     return !/^https?:\/\//.test(url);
   }
 
+  useEffect(() => {
+    if (resourceFixed && resourceRequired) {
+      onSubmit({ preventDefault: () => {} });
+    }
+  }, [resourceFixed, resourceRequired, onSubmit]);
+
   if (loadingConfig) return <div className="Loader" />;
+  if (resourceFixed && resourceRequired && !error)
+    return <div className="Loader" />;
 
   return (
     <form onSubmit={onSubmit}>
+      <h2 className="Title">{signInTitle}</h2>
+
       {resourceFixed ? null : (
         <input
           type="url"
@@ -289,7 +309,7 @@ function SignInForm({
       )}
 
       <button disabled={invalidUrl(resourceValue)} type="submit">
-        {signInLabel || "Connect to server"}
+        {signInButtonLabel || "Connect to server"}
       </button>
       {error && <p>{error}</p>}
     </form>
@@ -301,7 +321,8 @@ interface SignOutFormProps {
   resourceFixed?: string;
   signIn: (resource: string, middlecat_url?: string) => void;
   signOut: (signOutMiddlecat: boolean) => void;
-  signOutLabel?: string;
+  signOutTitle?: string;
+  signOutButtonLabel?: string;
 }
 
 function SignOutForm({
@@ -309,11 +330,13 @@ function SignOutForm({
   resourceFixed,
   signIn,
   signOut,
-  signOutLabel,
+  signOutTitle,
+  signOutButtonLabel,
 }: SignOutFormProps) {
   if (user.authDisabled) {
     return (
       <>
+        <h2 className="Title">{signOutTitle}</h2>
         <div className="NoAuthLabel">Auth Disabled </div>
         <div className="SignOut">
           {resourceFixed ? null : (
@@ -327,6 +350,8 @@ function SignOutForm({
   if (!user.authenticated) {
     return (
       <>
+        <h2 className="Title">{signOutTitle}</h2>
+
         <div className="NoAuthLabel"></div>
         <div className="SignOut">
           <button onClick={() => signIn(user.resource, user.middlecat)}>
@@ -342,6 +367,8 @@ function SignOutForm({
 
   return (
     <>
+      <h2 className="Title">{signOutTitle}</h2>
+
       <div className="User">
         {user?.image ? (
           <img
@@ -364,7 +391,7 @@ function SignOutForm({
 
       <div className="SignOut">
         <button onClick={() => signOut(false)}>
-          {signOutLabel || "Sign-out"}
+          {signOutButtonLabel || "Sign-out Server"}
         </button>
         <button onClick={() => signOut(true)}>{"Sign-out MiddleCat"}</button>
       </div>

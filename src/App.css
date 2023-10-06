@@ -35,3 +35,23 @@ html {
   display: flex;
   flex-direction: column;
 }
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes delayedFadeIn {
+  0% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

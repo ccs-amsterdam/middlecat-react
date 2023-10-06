@@ -5,13 +5,13 @@ export interface Middlecat {
   loading: boolean;
   error: string;
   fixedResource: string | undefined;
-  signIn: (resource: string, middlecat_url?: string) => void;
+  signIn: (resource: string, middlecat_url?: string) => Promise<void>;
   signInGuest: (
     resource: string,
     authDisabled: boolean,
     middlecat_url?: string
   ) => void;
-  signOut: (signOutMiddlecat: boolean) => void;
+  signOut: (signOutMiddlecat: boolean) => Promise<void>;
 }
 
 export interface MiddlecatUser {

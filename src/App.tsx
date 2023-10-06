@@ -5,7 +5,12 @@ import AuthForm from "./lib/AuthForm";
 
 function App() {
   return (
-    <MiddlecatProvider storeToken={true}>
+    <MiddlecatProvider
+      storeToken={true}
+      resourceRequired={true}
+      fixedResource="https://middlecat.up.railway.app/api/demo_resource"
+      loginModalProps={{ fontSize: "1.5em", title: "test" }}
+    >
       <Demo />
     </MiddlecatProvider>
   );
@@ -34,7 +39,10 @@ function Demo() {
   return (
     <div className="Page">
       <div className="Container">
-        <AuthForm resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource" />
+        <AuthForm
+          resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource"
+          fontSize="1.5em"
+        />
         <div style={{ color: "grey" }}>
           <p>{user && !user.email ? "Signed in as guest" : null}</p>
           <p>{msg || "..."}</p>

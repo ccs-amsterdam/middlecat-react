@@ -1,7 +1,8 @@
-export function silentDeleteSearchParams(items: string[]) {
+export function silentDeleteSearchParams() {
   // remove url parameters without refresh
   const searchParams = new URLSearchParams(window.location.search);
-  for (let item of items) searchParams.delete(item);
+  searchParams.delete("code");
+  searchParams.delete("state");
   let paramstring = searchParams.toString();
   let url = window.location.pathname;
   if (paramstring) url += "?" + paramstring;

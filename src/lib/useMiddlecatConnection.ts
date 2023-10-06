@@ -6,7 +6,7 @@ import {
   useEffect,
   useRef,
 } from "react";
-import { prepareURL, silentDeleteSearchParams } from "./util";
+import { prepareURL } from "./util";
 import { authorizationCode, authorize } from "./middlecatOauth";
 import { Middlecat, MiddlecatUser } from "./types";
 import { createMiddlecatUser } from "./createMiddlecatUser";
@@ -35,6 +35,7 @@ import axios from "axios";
  * token and store it in a secure httpOnly cookie. This requires a backend server that
  * is on same domain (more specifically, samesite) as the client.
  *
+ * @param onFinishOauth Callback function to be called when the oauth flow is finished. can be used to cleanup the "code" and "state" paramaters
  * @param autoConnect If user did not log out, automatically reconnect on next visit. default is true
  * @param storeToken    If TRUE, store the refresh token. This is less secure, but lets users persist connection across sessions.
  * @param bff           If a samesite BFF is available, provide the endpoint url here to intercept the refresh token.
@@ -43,6 +44,7 @@ import axios from "axios";
  */
 
 interface useMiddlecatParams {
+  onFinishOauth: () => void;
   autoConnect?: boolean;
   storeToken?: boolean;
   bff?: string;
@@ -50,6 +52,7 @@ interface useMiddlecatParams {
 }
 
 export default function useMiddlecatConnection({
+  onFinishOauth,
   autoConnect = true, // If user did not log out, automatically reconnect on next visit
   storeToken = false, // Stores refresh token in localstorage to persist across sessions, at the cost of making them more vulnerable to XSS
   bff = undefined, // use backend-for-frontend to intercept refresh token for better security. Requires setting up a bff endpoint,
@@ -61,7 +64,7 @@ export default function useMiddlecatConnection({
   const [error, setError] = useState("");
 
   const signIn = useCallback(
-    (resource?: string, middlecat_url?: string) => {
+    async (resource?: string, middlecat_url?: string) => {
       // OAuth action 1. Redirects to middlecat, which will redirect back with code and state
       // parameters. This triggers the authorizationCode flow.
       setError("");
@@ -99,7 +102,7 @@ export default function useMiddlecatConnection({
   );
 
   const signOut = useCallback(
-    (signOutMiddlecat: boolean = false) => {
+    async (signOutMiddlecat: boolean = false) => {
       setLoading(true);
       const resource = localStorage.getItem("resource");
       localStorage.removeItem(resource + "_refresh");
@@ -141,12 +144,12 @@ export default function useMiddlecatConnection({
     const state = searchParams.get("state");
     const inFlow = localStorage.getItem("awaiting_oauth_redirect") === "true";
     localStorage.setItem("awaiting_oauth_redirect", "false");
-    silentDeleteSearchParams(["code", "state"]);
 
     // If in oauth flow and code and state parameters are given, complete the oauth flow.
     // (the inFlow shouldn't be needed since we remove the URL parameters, but this somehow
     //  doesn't work when useMiddlecat is imported in nextJS. so this is just to be sure)
     if (inFlow && code && state) {
+      //silentDeleteSearchParams(["code", "state"]);
       connectWithAuthGrant(
         resource,
         code,
@@ -155,7 +158,7 @@ export default function useMiddlecatConnection({
         bff,
         setUser,
         setLoading
-      );
+      ).then(onFinishOauth);
       return;
     }
 
@@ -170,7 +173,7 @@ export default function useMiddlecatConnection({
         setError(`could not connect to ${resource}`);
       })
       .finally(() => setLoading(false));
-  }, [autoConnect, storeToken, signIn, bff, fixedResource]);
+  }, [autoConnect, storeToken, signIn, bff, fixedResource, onFinishOauth]);
 
   return {
     user,
@@ -183,7 +186,7 @@ export default function useMiddlecatConnection({
   };
 }
 
-function connectWithAuthGrant(
+async function connectWithAuthGrant(
   resource: string,
   code: string,
   state: string,
@@ -192,7 +195,7 @@ function connectWithAuthGrant(
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
   setLoading: Dispatch<SetStateAction<boolean>>
 ) {
-  authorizationCode(resource, code, state, bff)
+  await authorizationCode(resource, code, state, bff)
     .then(({ access_token, refresh_token }) => {
       const user = createMiddlecatUser(
         access_token,
@@ -259,8 +262,8 @@ async function resumeConnection(
         setUser
       );
       setUser(user);
+      return null;
     }
-    return null;
   } catch (e) {
     console.error(e);
     localStorage.removeItem(resource + "_refresh");
