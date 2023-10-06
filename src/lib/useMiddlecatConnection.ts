@@ -133,7 +133,9 @@ export default function useMiddlecatConnection({
     if (!runOnce.current) return;
     runOnce.current = false;
 
-    const resource = fixedResource || localStorage.getItem("resource");
+    const resource = prepareURL(
+      fixedResource || localStorage.getItem("resource") || ""
+    );
     if (!resource) {
       setLoading(false);
       return;

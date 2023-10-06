@@ -2,7 +2,7 @@
   "name": "middlecat-react",
   "description": "SDK for using MiddleCat Authentication",
   "author": "Kasper Welbers",
-  "version": "0.3.12",
+  "version": "0.3.13",
   "repository": {
     "type": "git",
     "url": "https://github.com/ccs-amsterdam/middlecat-react"
