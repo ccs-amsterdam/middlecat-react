@@ -10,11 +10,31 @@ First install the middlecat-react NPM module
 npm install middlecat-react
 ```
 
-Then use the hook to get a user and AuthForm component.
+Then wrap the component tree that uses middlecat with the middlecat provider.
+You can provide general settings as props. In this example we use bff (backend-for-frontend) to set the
+API path to proxy interaction with MiddleCat, for safer storage of tokens.
 
 ```
+import {  MiddlecatProvider } from "middlecat-react";
+
+export default function Example() {
+  return (
+    <MiddlecatProvider>
+      <YourApp />
+    </MiddlecatProvider>
+  );
+}
+```
+
+Now you can use useMiddlecat inside the provider to get the user.
+For actions like signing in and out, you can either get the signIn and signOut functions from useMiddlecat, or
+use the AuthForm component.
+
+```
+import { useMiddlecat, AuthForm } from "middlecat-react";
+
 function Component() {
-  const { user, AuthForm } = useMiddlecat();
+  const { user, loading, error, signIn, signOut, signInGuest } = useMiddlecat();
 
   return <AuthForm />
 }
@@ -25,7 +45,7 @@ the scenes, so the user.api should be all that you really need.
 
 The AuthForm is a component for a Login/Logout screen. It is also possible to make a custom screen, for which useMiddlecat returns the signIn and signOut methods and a loading state.
 
-By default, the refresh_token is not stored. This is safer, but has the downside that a user will have to authenticate for every new session (including refreshing the page and opening other tabs). A more convenient alternative is to set `useMiddlecat({storeToken: true})`. This stores the refresh token in localstorage. This is less secure because the tokens could be more easily stolen in case of a XSS attack, so it is not recommended if data is very sensitive. Also see the excellent explanation on [Auth0](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation) for some details on how refresh token rotation mitigates the risk somewhat. If you want both convenience and security, read on about using React with a (small, optionally stateless) backend.
+By default, the refresh_token is not stored. This is safer, but has the downside that a user will have to authenticate for every new session (including refreshing the page and opening multiple tabs). A more convenient alternative is to set storeToken to true in the MiddlecatProvider (`<MiddlecatProvider storeToken={true}`). This stores the refresh token in localstorage. This is less secure because the tokens could be more easily stolen in case of a XSS attack, so it is not recommended if data is sensitive. Also see the excellent explanation on [Auth0](https://auth0.com/docs/secure/tokens/refresh-tokens/refresh-token-rotation) for some details on how refresh token rotation mitigates the risk somewhat. If you want both convenience and security, read on about using React with a (small, optionally stateless) backend.
 
 ## React with a samesite backend (e.g. NextJS)
 
@@ -41,4 +61,4 @@ export default async function handler(req, res) {
 }
 ```
 
-In the hook, you then set bff (backend-for-frontend) to the path of the endpoint: `useMiddlecat({bff: "/api/bffAuth"})`
+To use this proxy, set the API path in the bff prop of the MiddleCat provider: `<MiddlecatProvider bff=/api/bffAuth`.
