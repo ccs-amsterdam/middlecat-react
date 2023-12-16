@@ -8,7 +8,7 @@ function App() {
     <MiddlecatProvider
       storeToken={true}
       resourceRequired={true}
-      fixedResource="https://middlecat.up.railway.app/api/demo_resource"
+      // fixedResource="https://middlecat.up.railway.app/api/demo_resource"
       loginModalProps={{ fontSize: "1.5em", title: "test" }}
     >
       <Demo />

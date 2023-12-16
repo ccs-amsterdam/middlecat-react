@@ -70,6 +70,7 @@ export default function useMiddlecatConnection({
       setError("");
 
       let r = prepareURL(resource || fixedResource || "");
+      if (!r) return;
       setLoading(true);
       authorize(r, middlecat_url)
         .then((middlecat_redirect) => {

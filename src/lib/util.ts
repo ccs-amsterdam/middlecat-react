@@ -10,7 +10,7 @@ export function silentDeleteSearchParams() {
 }
 
 export function prepareURL(url: string) {
-  if (typeof window !== "undefined" && !/^https?:\/\//.test(url)) {
+  if (url && typeof window !== "undefined" && !/^https?:\/\//.test(url)) {
     url = `${window.location.origin}/${url}`;
   }
   return url.replace(/\/$/, "");
