@@ -19,6 +19,7 @@ function App() {
 function Demo() {
   const { user } = useMiddlecat();
   const [msg, setMsg] = useState("");
+  const { signInGuest } = useMiddlecat();
 
   useEffect(() => {
     if (!user?.api) {

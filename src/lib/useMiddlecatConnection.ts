@@ -72,7 +72,7 @@ export default function useMiddlecatConnection({
       let r = prepareURL(resource || fixedResource || "");
       if (!r) return;
       setLoading(true);
-      authorize(r, middlecat_url)
+      return authorize(r, middlecat_url)
         .then((middlecat_redirect) => {
           localStorage.setItem("resource", r);
           localStorage.setItem("awaiting_oauth_redirect", "true");
@@ -93,11 +93,28 @@ export default function useMiddlecatConnection({
   );
 
   const signInGuest = useCallback(
-    (resource: string, authDisabled: boolean, middlecat_url?: string) => {
+    async (resource: string, middlecat_url?: string) => {
+      setError("");
+
       let r = prepareURL(resource || fixedResource || "");
       localStorage.setItem("resource", r);
 
-      setUser(createGuestUser(r, setUser, authDisabled, middlecat_url));
+      if (middlecat_url) {
+        setUser(createGuestUser(r, setUser, middlecat_url));
+        return;
+      }
+
+      setLoading(true);
+      return axios
+        .get(`${r}/config`, { timeout: 5000 })
+        .then((res) => {
+          setUser(createGuestUser(r, setUser, res.data.middlecat_url));
+        })
+        .catch((e) => {
+          console.error(e);
+          setError("Could not connect to server");
+        })
+        .finally(() => setLoading(false));
     },
     [fixedResource]
   );
@@ -116,9 +133,7 @@ export default function useMiddlecatConnection({
         .finally(() => {
           setLoading(false);
           if (fixedResource) {
-            setUser(
-              createGuestUser(fixedResource, setUser, false, user.middlecat)
-            );
+            setUser(createGuestUser(fixedResource, setUser, user.middlecat));
           } else {
             setUser(undefined);
           }
@@ -241,7 +256,7 @@ async function resumeConnection(
   }
 
   if (res.data.authorization === "no_auth") {
-    setUser(createGuestUser(resource, setUser, true));
+    setUser(createGuestUser(resource, setUser));
     return null;
   }
 
@@ -272,8 +287,5 @@ async function resumeConnection(
     localStorage.removeItem(resource + "_refresh");
   }
 
-  if (res.data.authorization === "allow_guests") {
-    setUser(createGuestUser(resource, setUser));
-    return null;
-  }
+  setUser(createGuestUser(resource, setUser));
 }

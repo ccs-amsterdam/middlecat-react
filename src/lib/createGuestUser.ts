@@ -13,7 +13,6 @@ import { MiddlecatUser } from "./types";
 export function createGuestUser(
   resource: string,
   setUser: Dispatch<SetStateAction<MiddlecatUser | undefined>>,
-  authDisabled: boolean = false,
   middlecat_url?: string
 ): MiddlecatUser | undefined {
   if (!resource) return undefined;
@@ -29,7 +28,6 @@ export function createGuestUser(
     name: "",
     image: "",
     authenticated: false,
-    authDisabled,
     api,
     resource: resource || "",
     middlecat: middlecat_url || "",

@@ -6,11 +6,7 @@ export interface Middlecat {
   error: string;
   fixedResource: string | undefined;
   signIn: (resource: string, middlecat_url?: string) => Promise<void>;
-  signInGuest: (
-    resource: string,
-    authDisabled: boolean,
-    middlecat_url?: string
-  ) => void;
+  signInGuest: (resource: string, middlecat_url?: string) => Promise<void>;
   signOut: (signOutMiddlecat: boolean) => Promise<void>;
 }
 
@@ -23,8 +19,6 @@ export interface MiddlecatUser {
   image: string;
   /** is user authenticated? */
   authenticated: boolean;
-  /** Authentication is disabled? */
-  authDisabled?: boolean;
   /** Axios instance to make API calls */
   api: Axios;
   /** resource url */

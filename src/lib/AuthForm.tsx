@@ -193,12 +193,8 @@ export default function AuthForm({
 }
 
 interface SignInFormProps {
-  signIn: (resource: string, middlecat_url?: string) => void;
-  signInGuest: (
-    resource: string,
-    authDisabled: boolean,
-    middlecat_url?: string
-  ) => void;
+  signIn: (resource: string, middlecat_url?: string) => Promise<void>;
+  signInGuest: (resource: string, middlecat_url?: string) => Promise<void>;
   resourceExample?: string;
   resourceSuggestion?: string;
   resourceFixed?: string;
@@ -237,37 +233,37 @@ function SignInForm({
     async (e: any) => {
       e.preventDefault();
       setLoadingConfig(true);
+      signInGuest(resourceValue).finally(() => setLoadingConfig(false));
+      // DEPRECATED: NO LONGER AUTO LOGIN. jUST ALWAYS CONNECT AS GUEST FIRST
+      // let res;
+      // try {
+      //   res = await axios.get(`${prepareURL(resourceValue)}/config`, {
+      //     timeout: 5000,
+      //   });
+      // } catch (e) {
+      //   console.error(e);
+      // }
 
-      // need to add try catch, because axios throws an error if the server is not reachable
-      let res;
-      try {
-        res = await axios.get(`${prepareURL(resourceValue)}/config`, {
-          timeout: 5000,
-        });
-      } catch (e) {
-        console.error(e);
-      }
+      // if (!res || res.status !== 200) {
+      //   setError("Could not connect to server");
+      //   setLoadingConfig(false);
+      //   return;
+      // }
 
-      if (!res || res.status !== 200) {
-        setError("Could not connect to server");
-        setLoadingConfig(false);
-        return;
-      }
+      // const auth = res.data.authorization || "allow_guests";
 
-      const auth = res.data.authorization || "allow_guests";
+      // const middlecat_url = res.data.middlecat_url || "";
+      // const allow_guests = auth === "allow_guests";
 
-      const middlecat_url = res.data.middlecat_url || "";
-      const allow_guests = auth === "allow_guests";
-
-      if (auth === "no_auth") {
-        signInGuest(resourceValue, true, middlecat_url);
-      } else if (!allow_guests && !middlecat_url) {
-        setError("Server has invalid authentication configuration");
-      } else if (!allow_guests && middlecat_url) {
-        signIn(resourceValue, middlecat_url);
-      } else if (allow_guests) {
-        signInGuest(resourceValue, false, middlecat_url);
-      }
+      // if (auth === "no_auth") {
+      //   signInGuest(resourceValue, true, middlecat_url);
+      // } else if (!allow_guests && !middlecat_url) {
+      //   setError("Server has invalid authentication configuration");
+      // } else if (!allow_guests && middlecat_url) {
+      //   signIn(resourceValue, middlecat_url);
+      // } else if (allow_guests) {
+      //   signInGuest(resourceValue, false, middlecat_url);
+      // }
 
       setLoadingConfig(false);
     },
@@ -319,8 +315,8 @@ function SignInForm({
 interface SignOutFormProps {
   user: MiddlecatUser;
   resourceFixed?: string;
-  signIn: (resource: string, middlecat_url?: string) => void;
-  signOut: (signOutMiddlecat: boolean) => void;
+  signIn: (resource: string, middlecat_url?: string) => Promise<void>;
+  signOut: (signOutMiddlecat: boolean) => Promise<void>;
   signOutTitle?: string;
   signOutButtonLabel?: string;
 }
@@ -333,20 +329,6 @@ function SignOutForm({
   signOutTitle,
   signOutButtonLabel,
 }: SignOutFormProps) {
-  if (user.authDisabled) {
-    return (
-      <>
-        <h2 className="Title">{signOutTitle}</h2>
-        <div className="NoAuthLabel">Auth Disabled </div>
-        <div className="SignOut">
-          {resourceFixed ? null : (
-            <button onClick={() => signOut(false)}>Change server</button>
-          )}
-        </div>
-      </>
-    );
-  }
-
   if (!user.authenticated) {
     return (
       <>

@@ -14,7 +14,6 @@ interface Props {
   storeToken?: boolean;
   bff?: string | undefined;
   fixedResource?: string | undefined;
-  resourceRequired?: boolean;
   loginModalProps?: {
     title: string;
     primary?: string;
@@ -30,8 +29,6 @@ export function MiddlecatProvider({
   storeToken,
   bff,
   fixedResource,
-  resourceRequired,
-  loginModalProps,
   cleanupParams,
 }: Props) {
   const middlecat = useMiddlecatConnection({
@@ -45,14 +42,6 @@ export function MiddlecatProvider({
   return (
     <MiddlecatContext.Provider value={middlecat}>
       {children}
-      {resourceRequired ? (
-        <LoginModal
-          {...loginModalProps}
-          middlecat={middlecat}
-          fixedResource={fixedResource}
-          resourceRequired={resourceRequired}
-        />
-      ) : null}
     </MiddlecatContext.Provider>
   );
 }
