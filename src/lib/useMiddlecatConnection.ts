@@ -69,6 +69,11 @@ export default function useMiddlecatConnection({
       // parameters. This triggers the authorizationCode flow.
       setError("");
 
+      if (!resource && !fixedResource) {
+        setError("No resource specified");
+        return;
+      }
+
       let r = prepareURL(resource || fixedResource || "");
       if (!r) return;
       setLoading(true);
@@ -93,8 +98,13 @@ export default function useMiddlecatConnection({
   );
 
   const signInGuest = useCallback(
-    async (resource: string, middlecat_url?: string) => {
+    async (resource?: string, middlecat_url?: string) => {
       setError("");
+
+      if (!resource && !fixedResource) {
+        setError("No resource specified");
+        return;
+      }
 
       let r = prepareURL(resource || fixedResource || "");
       localStorage.setItem("resource", r);

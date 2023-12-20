@@ -5,8 +5,8 @@ export interface Middlecat {
   loading: boolean;
   error: string;
   fixedResource: string | undefined;
-  signIn: (resource: string, middlecat_url?: string) => Promise<void>;
-  signInGuest: (resource: string, middlecat_url?: string) => Promise<void>;
+  signIn: (resource?: string, middlecat_url?: string) => Promise<void>;
+  signInGuest: (resource?: string, middlecat_url?: string) => Promise<void>;
   signOut: (signOutMiddlecat: boolean) => Promise<void>;
 }
 
