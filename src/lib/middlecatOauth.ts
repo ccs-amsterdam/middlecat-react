@@ -1,9 +1,9 @@
 import axios from "axios";
-import pkceChallenge from "pkce-challenge";
 import { Dispatch, SetStateAction } from "react";
 import { MiddlecatUser } from "./types";
 
 import { prepareURL } from "./util";
+import pkce from "./pkce";
 
 export async function authorize(resource: string, middlecat_url?: string) {
   // we makes sure that the redirect url doesn't contain parameters from a previous oauth flow.
@@ -12,11 +12,10 @@ export async function authorize(resource: string, middlecat_url?: string) {
   redirectURL.searchParams.delete("state");
   redirectURL.searchParams.delete("redirect_uri");
   redirectURL.searchParams.delete("code");
-  const redirect_uri =
-    redirectURL.origin + redirectURL.pathname + redirectURL.search;
+  const redirect_uri = redirectURL.origin + redirectURL.pathname + redirectURL.search;
 
-  const pkce = pkceChallenge();
   const state = (Math.random() + 1).toString(36).substring(2);
+  const { codeVerifier, codeChallenge } = await pkce();
   const clientURL = new URL(redirect_uri);
   const clientId = clientURL.host;
 
@@ -36,24 +35,21 @@ export async function authorize(resource: string, middlecat_url?: string) {
 
   // need to remember code_verifier and state, and this needs to work across
   // sessions because auth with magic links continues in new window.
-  localStorage.setItem(resource + "_code_verifier", pkce.code_verifier);
+  localStorage.setItem(resource + "_code_verifier", codeVerifier);
   localStorage.setItem(resource + "_state", state);
   localStorage.setItem(resource + "_middlecat", middlecat_url || "");
+  alert(state);
   return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${encodeURIComponent(
     redirect_uri
-  )}&resource=${resource}&code_challenge=${pkce.code_challenge}`;
+  )}&resource=${resource}&code_challenge=${codeChallenge}`;
 }
 
-export async function authorizationCode(
-  resource: string,
-  code: string,
-  state: string,
-  bff: string | undefined
-) {
+export async function authorizationCode(resource: string, code: string, state: string, bff: string | undefined) {
   const sendState = localStorage.getItem(resource + "_state");
   const middlecat = localStorage.getItem(resource + "_middlecat");
   let code_verifier = localStorage.getItem(resource + "_code_verifier");
 
+  console.log(middlecat, sendState, state);
   if (!middlecat || sendState !== state) {
     // if state doesn't match, something fishy is going on. We won't send the actual code_verifier, but instead
     // send an obvious wrong code_verifier, which will cause middlecat to kill the session
@@ -106,8 +102,7 @@ export async function refreshToken(
     url = bff;
   }
 
-  if (!body.refresh_token && !body.refresh_id)
-    return { access_token: "", refresh_token: "" };
+  if (!body.refresh_token && !body.refresh_id) return { access_token: "", refresh_token: "" };
 
   const res = await axios.post(url, body);
 

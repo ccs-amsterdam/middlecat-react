@@ -30,9 +30,7 @@ export default async function bffAuthHandler(
     // base64 encode resource and middlecat_url so it can be used in cookie name.
     // required so that there can be multiple resource sessions at the same time,
     // and ensures that refresh token is only returned to the middlecat it came from
-    const name64 = Buffer.from(
-      req.body.resource + "." + req.body.middlecat_url
-    ).toString("base64");
+    const name64 = Buffer.from(req.body.resource + "." + req.body.middlecat_url).toString("base64");
     const refreshCookie = "refresh_" + name64;
 
     // if bff auth is used, request will not contain the full refresh_token.
@@ -40,12 +38,8 @@ export default async function bffAuthHandler(
     // a cryptographic random 'secret'. The id is stored in localstorage, and the
     // secret is stored in a httponly samesite cookie. Both parts are needed to
     // get an access token (refresh_token grant) or kill a session.
-    if (
-      req.body.grant_type === "refresh_token" ||
-      req.body.grant_type === "kill_session"
-    )
-      req.body.refresh_token =
-        req.body.refresh_id + "." + cookies.get(refreshCookie) || "";
+    if (req.body.grant_type === "refresh_token" || req.body.grant_type === "kill_session")
+      req.body.refresh_token = req.body.refresh_id + "." + cookies.get(refreshCookie) || "";
 
     const tokens_res = await fetch(req.body.middlecat_url, {
       method: "POST",
