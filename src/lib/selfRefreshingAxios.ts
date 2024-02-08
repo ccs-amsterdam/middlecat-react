@@ -28,8 +28,7 @@ export default function selfRefreshingAxios(
   // use in intercepter as closure
   let currentAccessToken = access_token;
   let currentRefreshToken = refresh_token;
-  if (storeToken)
-    localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
+  if (storeToken) localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
 
   api.interceptors.request.use(
     async (config) => {
@@ -42,24 +41,16 @@ export default function selfRefreshingAxios(
 
       // If there is an access_token, see if it's still valid and if not refresh
       try {
-        const { access_token, refresh_token } = await getTokens(
-          currentAccessToken,
-          currentRefreshToken,
-          resource,
-          bff
-        );
+        const { access_token, refresh_token } = await getTokens(currentAccessToken, currentRefreshToken, resource, bff);
         currentAccessToken = access_token;
         currentRefreshToken = refresh_token;
-        if (storeToken && !bff)
-          localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
+        if (storeToken && !bff) localStorage.setItem(`${resource}_refresh`, currentRefreshToken);
         if (!currentAccessToken) {
           setUser(undefined);
           throw new Error("Could not refresh token");
         }
 
-        config.headers = {
-          Authorization: `Bearer ${currentAccessToken}`,
-        };
+        config.headers.Authorization = `Bearer ${currentAccessToken}`;
       } catch (e) {
         console.error(e);
       }
@@ -77,12 +68,7 @@ export default function selfRefreshingAxios(
 /**
  * Checks if access token is about to expire. If so, we first refresh the tokens.
  */
-async function getTokens(
-  access_token: string,
-  refresh_token: string,
-  resource: string,
-  bff?: string
-) {
+async function getTokens(access_token: string, refresh_token: string, resource: string, bff?: string) {
   const payload: AccessTokenPayload = jwtDecode(access_token);
 
   const now = Date.now() / 1000;
