@@ -38,7 +38,6 @@ export async function authorize(resource: string, middlecat_url?: string) {
   localStorage.setItem(resource + "_code_verifier", codeVerifier);
   localStorage.setItem(resource + "_state", state);
   localStorage.setItem(resource + "_middlecat", middlecat_url || "");
-  alert(state);
   return `${middlecat_url}/authorize?client_id=${clientId}&state=${state}&redirect_uri=${encodeURIComponent(
     redirect_uri
   )}&resource=${resource}&code_challenge=${codeChallenge}`;
@@ -49,7 +48,6 @@ export async function authorizationCode(resource: string, code: string, state: s
   const middlecat = localStorage.getItem(resource + "_middlecat");
   let code_verifier = localStorage.getItem(resource + "_code_verifier");
 
-  console.log(middlecat, sendState, state);
   if (!middlecat || sendState !== state) {
     // if state doesn't match, something fishy is going on. We won't send the actual code_verifier, but instead
     // send an obvious wrong code_verifier, which will cause middlecat to kill the session
