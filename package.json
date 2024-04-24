@@ -46,8 +46,8 @@
     "vite-tsconfig-paths": "^4.2.2"
   },
   "scripts": {
-    "start": "vite",
-    "start:ts": "vite & npm run watch",
+    "start": "vite --port 3007 ",
+    "start:ts": "npm run start & npm run watch",
     "clean": "rimraf dist/",
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
     "build:esm": "tsc --module esnext --outDir dist/esm",

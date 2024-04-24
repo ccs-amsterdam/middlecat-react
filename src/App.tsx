@@ -28,7 +28,17 @@ function Demo() {
     }
     const timer = setInterval(async () => {
       try {
-        const res = await user.api.post("test");
+        // request it trice, to test blocking parallel runs of
+        // the token refresh interceptor
+
+        user.api.post("test");
+        user.api.post("test");
+        setTimeout(() => user.api.post("test"), 10);
+        const req = user.api.post("test");
+        user.api.post("test");
+        user.api.post("test");
+
+        const res = await req;
         setMsg(res.data);
       } catch (e) {
         setMsg(`Could not validate token`);
@@ -40,17 +50,12 @@ function Demo() {
   return (
     <div className="Page">
       <div className="Container">
-        <AuthForm
-          resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource"
-          fontSize="1.5em"
-        />
+        <AuthForm resourceSuggestion="https://middlecat.up.railway.app/api/demo_resource" fontSize="1.5em" />
         <div style={{ color: "grey" }}>
           <p>{user && !user.email ? "Signed in as guest" : null}</p>
           <p>{msg || "..."}</p>
           <p style={{ fontSize: "1.2em" }}>
-            {msg &&
-              msg !== "Unauthenticated" &&
-              "token is automatically refreshed about 10 seconds before it expires"}
+            {msg && msg !== "Unauthenticated" && "token is automatically refreshed about 10 seconds before it expires"}
           </p>
         </div>
       </div>
