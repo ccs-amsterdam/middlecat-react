@@ -2,7 +2,7 @@
   "name": "middlecat-react",
   "description": "SDK for using MiddleCat Authentication",
   "author": "Kasper Welbers",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "repository": {
     "type": "git",
     "url": "https://github.com/ccs-amsterdam/middlecat-react"
@@ -23,8 +23,8 @@
   },
   "peerDependencies": {
     "axios": "^1.2",
-    "react": "^18",
-    "react-dom": "^18"
+    "react": ">=18",
+    "react-dom": ">=18"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.16.5",
